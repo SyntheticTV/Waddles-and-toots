@@ -1,13 +1,14 @@
 {
   "expo": {
-    "name": "scaffold",
-    "slug": "scaffold",
-    "version": "1.0.0",
+    "name": "Waddles and Toots",
+    "slug": "waddles-and-toots",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "requireFullScreen": true
     },
     "android": {
       "adaptiveIcon": {
@@ -20,6 +21,10 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "backgroundColor": "#8FBF33",
+    "plugins": [
+      "expo-audio"
+    ]
   }
 }
