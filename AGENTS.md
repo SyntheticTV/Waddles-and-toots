@@ -18,9 +18,10 @@ writing any code.
 Expo SDK 57 · React Native 0.86 · React 19 · TypeScript
 
 - `@shopify/react-native-skia` — the play surface
-- `react-native-reanimated` v4 (+ `react-native-worklets`) — the game loop, on the
-  UI thread. No `babel.config.js` is needed: babel-preset-expo 57 wires the
-  worklets plugin automatically. Don't add one.
+- `react-native-reanimated` v4 (+ `react-native-worklets`) — gesture plumbing, and
+  the escape hatch if rendering ever needs the UI thread. No `babel.config.js` is
+  needed: babel-preset-expo 57 wires the worklets plugin automatically. Don't add
+  one.
 - `react-native-gesture-handler` — the d-pad and buttons
 - `expo-audio`, `expo-haptics` — sound is doing heavy comedic lifting; every poof
   gets a haptic
@@ -34,11 +35,22 @@ src/
     types.ts    shared shapes (levels, props, stages)
     tuning.ts   every number that decides how the game feels
     stink.ts    the stink meter — pure, no React, no Skia
+    engine.ts   the simulation for one room: step(state, dt, input)
   levels/
     <level>.ts  one room each, authored in world units
   theme/
     palette.ts  the ink set, shared with the design bible
+  ui/
+    GameScreen  the loop, input, haptics, end card
+    Room        Skia drawing, no rules
+    Hud         meters and lines (RN text, not canvas text)
+    Controls    d-pad and the two buttons
 ```
+
+**The loop** runs the sim on the JS thread via `requestAnimationFrame` and
+re-renders each frame. That is plenty for one room's worth of shapes and it keeps
+every rule in plain, testable TypeScript. If a busy room drops frames, push
+positions into shared values — don't move the rules into worklets.
 
 ## House rules for the code
 
