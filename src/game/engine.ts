@@ -14,12 +14,21 @@ import {
   applyDecoy,
   applyDecoyToSuspicion,
   applyPoof,
+  huntHeat,
   noseAccuracy,
   stageFor,
 } from './stink';
 import * as T from './tuning';
 
 // ------------------------------------------------------------------ helpers
+
+/**
+ * What the room says when Fluffy takes the fall himself rather than there being
+ * anything nearby worth blaming. Named, rather than buried in the middle of
+ * `tickDecoy`, because every spoken line in the game has to be findable by the
+ * script that records them. §7.
+ */
+export const DECOY_CAT_LINE = 'AH HA! It was the CAT!';
 
 const dist = (a: Vec2, b: Vec2) => Math.hypot(a.x - b.x, a.y - b.y);
 const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
@@ -46,22 +55,36 @@ export type GameEventKind =
   | 'nugget'
   | 'decoy'
   | 'leash-warning'
+  /** The slide ran out under him. Not the same thing as losing the group. */
+  | 'slide-empty'
   | 'blame'
   | 'escaped'
   | 'caught'
   | 'local-found'
-  | 'local-asleep';
+  | 'local-asleep'
+  /** The last nugget went in and the way out just unlocked. */
+  | 'gate-open';
 
 export interface GameEvent {
   kind: GameEventKind;
   /** Where it happened, for a puff of art or a floating line. */
   at?: Vec2;
   text?: string;
+  /**
+   * Decoys only: Fluffy took the fall himself rather than pinning it on a prop,
+   * which is the two-beat version of the joke — the accusation, and then the
+   * crowd finding out it is not him either (§7).
+   */
+  tookTheFall?: boolean;
 }
 
 export interface Follower {
   id: 'toots' | 'fluffy' | 'sniffsalot';
   pos: Vec2;
+  /** Unit-ish heading, so the art can turn them the way they are walking. */
+  facing: Vec2;
+  /** Actually going somewhere this frame, so the art can walk instead of idle. */
+  moving: boolean;
 }
 
 export interface Person {
@@ -72,6 +95,12 @@ export interface Person {
 }
 
 export interface PoofPuff {
+  pos: Vec2;
+  age: number;
+}
+
+/** A nugget going in: a little burst where it was. Presentation only. */
+export interface Spark {
   pos: Vec2;
   age: number;
 }
@@ -114,9 +143,17 @@ export interface RunState {
 
   nuggets: { pos: Vec2; taken: boolean }[];
   collected: number;
+  /** True once every nugget is in and the gate has swung open. §11. */
+  gateOpen: boolean;
+  /** Standing in the gateway. With the gate shut, that is worth saying out loud. */
+  atExit: boolean;
 
   crowd: Person[];
   puffs: PoofPuff[];
+  sparks: Spark[];
+
+  /** Waddles is on the move. The art walks him rather than idling him. */
+  moving: boolean;
 
   local: { pos: Vec2; species: string; snoozalot: boolean; mood: LocalMood; timerMs: number; found: boolean };
 
@@ -147,9 +184,9 @@ export function createRun(level: LevelSpec, opts: CreateRunOptions = {}): RunSta
     waddles: { ...start },
     facing: { x: 0, y: 1 },
     followers: [
-      { id: 'toots', pos: { ...start } },
-      { id: 'fluffy', pos: { ...start } },
-      { id: 'sniffsalot', pos: { ...start } },
+      { id: 'toots', pos: { ...start }, facing: { x: 0, y: 1 }, moving: false },
+      { id: 'fluffy', pos: { ...start }, facing: { x: 0, y: 1 }, moving: false },
+      { id: 'sniffsalot', pos: { ...start }, facing: { x: 0, y: 1 }, moving: false },
     ],
     trail: [{ ...start }],
 
@@ -169,6 +206,8 @@ export function createRun(level: LevelSpec, opts: CreateRunOptions = {}): RunSta
 
     nuggets: level.nuggets.map((pos) => ({ pos: { ...pos }, taken: false })),
     collected: 0,
+    gateOpen: level.nuggets.length === 0,
+    atExit: false,
 
     crowd: level.crowd.map((c, i) => ({
       pos: { ...c.at },
@@ -177,6 +216,9 @@ export function createRun(level: LevelSpec, opts: CreateRunOptions = {}): RunSta
       phase: i * 1.7,
     })),
     puffs: [],
+    sparks: [],
+
+    moving: false,
 
     local: {
       pos: { ...level.local.at },
@@ -205,8 +247,8 @@ export function step(s: RunState, dtMs: number, input: InputState): void {
   collectNuggets(s);
   checkFreshAir(s, dt);
   checkBumps(s, dtMs);
-  moveCrowd(s, dt);
   tickDecoy(s, dtMs, input);
+  moveCrowd(s, dt);
   tickStink(s, dt);
   tickLocal(s, dtMs);
   tickPuffs(s, dt);
@@ -220,6 +262,7 @@ function moveWaddles(s: RunState, dt: number, dtMs: number, input: InputState): 
   const moving = input.move.x !== 0 || input.move.y !== 0;
 
   s.sliding = wantsSlide && moving;
+  s.moving = moving;
 
   if (s.sliding) {
     s.slideLeftMs -= dtMs;
@@ -227,7 +270,7 @@ function moveWaddles(s: RunState, dt: number, dtMs: number, input: InputState): 
       s.slideLeftMs = 0;
       s.slideRechargeMs = T.SLIDE_RECHARGE_MS;
       s.sliding = false;
-      s.events.push({ kind: 'leash-warning', at: { ...s.waddles } });
+      s.events.push({ kind: 'slide-empty', at: { ...s.waddles } });
     }
   } else {
     if (s.slideRechargeMs > 0) s.slideRechargeMs -= dtMs;
@@ -283,10 +326,18 @@ function followTheLeader(s: RunState, dt: number): void {
   s.followers.forEach((f, i) => {
     const target = sampleTrail(s.trail, (i + 1) * T.LINE_SPACING);
     const d = dist(f.pos, target);
-    if (d < 0.001) return;
+    if (d < 0.001) {
+      f.moving = false;
+      return;
+    }
     const stepLen = Math.min(d, maxStep);
-    f.pos.x += ((target.x - f.pos.x) / d) * stepLen;
-    f.pos.y += ((target.y - f.pos.y) / d) * stepLen;
+    const dirX = (target.x - f.pos.x) / d;
+    const dirY = (target.y - f.pos.y) / d;
+    f.pos.x += dirX * stepLen;
+    f.pos.y += dirY * stepLen;
+    // Only turn when actually walking, so nobody spins on the spot.
+    f.moving = stepLen > 0.04;
+    if (stepLen > 0.02) f.facing = { x: dirX, y: dirY };
   });
 
   const tail = s.followers[s.followers.length - 1];
@@ -325,11 +376,29 @@ function collectNuggets(s: RunState): void {
     if (dist(n.pos, s.waddles) < T.NUGGET_RADIUS) {
       n.taken = true;
       s.collected += 1;
+      s.sparks.push({ pos: { ...n.pos }, age: 0 });
       s.events.push({ kind: 'nugget', at: { ...n.pos } });
+
+      // The last one unlocks the way out (§11).
+      if (!s.gateOpen && s.collected >= s.nuggets.length) {
+        s.gateOpen = true;
+        const e = s.level.exit;
+        s.events.push({
+          kind: 'gate-open',
+          at: { x: e.x + e.width / 2, y: e.y + e.height / 2 },
+        });
+      }
     }
   }
 }
 
+/**
+ * Fresh air is somewhere you stand, not something you pick up (§5).
+ *
+ * Step in and the clock stops and his nose clears; step out and both start again
+ * almost at once. The sliver of grace is only so that walking through a sprinkler
+ * does not strobe the bark on and off.
+ */
 function checkFreshAir(s: RunState, dt: number): void {
   let inAir = false;
   for (const prop of s.level.props) {
@@ -339,7 +408,7 @@ function checkFreshAir(s: RunState, dt: number): void {
       break;
     }
   }
-  s.freshAirLock = inAir ? T.FRESH_AIR_LOCK_SECONDS : Math.max(0, s.freshAirLock - dt);
+  s.freshAirLock = inAir ? T.FRESH_AIR_GRACE_SECONDS : Math.max(0, s.freshAirLock - dt);
 }
 
 /** Gurgle gurgle. */
@@ -365,6 +434,19 @@ function checkBumps(s: RunState, dtMs: number): void {
     }
   }
 
+  /*
+   * Walking the group into the local wakes it up — and startles Toots, because
+   * bumping anything startles Toots (§6). Waking your own compass therefore
+   * costs a poof and a chunk of the meter, which makes it a decision rather than
+   * a free retry (§9).
+   */
+  const onTheLocal =
+    dist(toots.pos, s.local.pos) < T.BUMP_RADIUS || dist(s.waddles, s.local.pos) < T.BUMP_RADIUS;
+  if (onTheLocal && (s.local.mood === 'asleep' || s.local.mood === 'drowsy')) {
+    nudgeLocal(s);
+    bumped = true;
+  }
+
   if (!bumped) return;
 
   s.stink = applyPoof(s.stink);
@@ -373,21 +455,99 @@ function checkBumps(s: RunState, dtMs: number): void {
   s.events.push({ kind: 'poof', at: { ...toots.pos } });
 }
 
+/**
+ * Where everybody goes.
+ *
+ * Three moods, and a person is only ever in one of them:
+ *
+ * - **Milling.** Orbiting their own patch of the room, minding their business.
+ * - **Hunting.** Past `HUNT_FROM` on the meter they have a fair idea where the
+ *   smell is coming from, and anybody near enough walks at Toots — faster the
+ *   worse it gets (§5).
+ * - **Distracted.** While Fluffy is holding them, whatever he pinned it on is far
+ *   more interesting than the skunk, and the whole room drifts over to look at it.
+ *   That is the gap the player moves through.
+ *
+ * Everyone moves *toward a target* rather than being placed on a curve, so
+ * changing mood is a turn rather than a teleport.
+ */
 function moveCrowd(s: RunState, dt: number): void {
-  const stage = stageFor(s.stink);
-  const panicking = stage === 'panic' && s.decoyHoldMs <= 0;
+  const toots = s.followers[0].pos;
+  const heat = huntHeat(s.stink);
+  const distracted = s.decoyHoldMs > 0;
+  const lure = distracted ? (s.blame?.at ?? null) : null;
 
   for (const p of s.crowd) {
-    p.phase += dt * (panicking ? 3.2 : 0.7);
-    if (panicking) {
-      // Hands in the air, making for the nearest wall.
-      const away = p.home.x < T.WORLD_WIDTH / 2 ? -1 : 1;
-      p.pos.x = clamp(p.pos.x + away * 16 * dt, 2, T.WORLD_WIDTH - 2);
-      p.pos.y += Math.sin(p.phase) * 4 * dt;
+    p.phase += dt * (1 + heat * 2.2);
+
+    let target: Vec2;
+    let speed: number;
+
+    let hunting = false;
+
+    if (lure) {
+      // Crowding round the cheese cart, the mop bucket, the pool.
+      target = lure;
+      speed = T.DECOY_PULL_SPEED;
+    } else if (heat > 0 && dist(p.pos, toots) < T.HUNT_RADIUS) {
+      hunting = true;
+      // A wobble on the approach, so nine people closing in still read as a
+      // crowd of individuals rather than one homing missile.
+      target = {
+        x: toots.x + Math.cos(p.phase * 1.6) * 3,
+        y: toots.y + Math.sin(p.phase * 1.3) * 3,
+      };
+      speed = T.CROWD_HUNT_SPEED * heat;
     } else {
-      p.pos.x = p.home.x + Math.cos(p.phase) * p.roam * 0.5;
-      p.pos.y = p.home.y + Math.sin(p.phase * 0.8) * p.roam * 0.35;
+      target = {
+        x: p.home.x + Math.cos(p.phase) * p.roam * 0.55,
+        y: p.home.y + Math.sin(p.phase * 0.8) * p.roam * 0.4,
+      };
+      speed = T.CROWD_IDLE_SPEED;
     }
+
+    const dx = target.x - p.pos.x;
+    const dy = target.y - p.pos.y;
+    const d = Math.hypot(dx, dy);
+    if (d > 0.001) {
+      const stepLen = Math.min(d, speed * dt);
+      let sx = dx / d;
+      let sy = dy / d;
+
+      /*
+       * Anybody who is not actually chasing him gives the group a wide berth, and
+       * gets out of the way sharpish if it comes at them. Nobody minding their own
+       * business has a reason to barge into a skunk, and a round that ends because
+       * somebody wandered into you is a round you could not have seen coming —
+       * which breaks "failing is funny, not sad" (§2.4). The threat has to come
+       * from people who are visibly trying.
+       */
+      let step = stepLen;
+      if (!hunting) {
+        const ax = p.pos.x - toots.x;
+        const ay = p.pos.y - toots.y;
+        const al = Math.hypot(ax, ay) || 1;
+        if (al < T.CATCH_RADIUS * 2.8) {
+          // Excuse me. Backing off, and quicker than a stroll.
+          sx = ax / al;
+          sy = ay / al;
+          step = T.CROWD_IDLE_SPEED * 2.4 * dt;
+        } else {
+          const nx = p.pos.x + sx * stepLen;
+          const ny = p.pos.y + sy * stepLen;
+          if (Math.hypot(nx - toots.x, ny - toots.y) < T.CATCH_RADIUS * 2.8) {
+            sx = -ay / al;
+            sy = ax / al;
+          }
+        }
+      }
+
+      p.pos.x += sx * step;
+      p.pos.y += sy * step;
+    }
+
+    p.pos.x = clamp(p.pos.x, 2, T.WORLD_WIDTH - 2);
+    p.pos.y = clamp(p.pos.y, 0, s.level.height);
   }
 }
 
@@ -403,30 +563,41 @@ function tickDecoy(s: RunState, dtMs: number, input: InputState): void {
 
   if (!input.decoyPressed || s.decoyCooldownMs > 0) return;
 
-  // Pin it on the nearest blame prop if there's one to hand; otherwise Fluffy
-  // puts the stripes on and takes the fall himself.
-  let nearest: Prop | null = null;
-  let nearestD = Infinity;
+  // Pin it on something in the room — but of the props near enough to be
+  // believable, take the one *furthest from Toots*, because the whole room is
+  // about to walk over to look at it and they must walk away from him, not
+  // through him. If nothing qualifies, Fluffy puts the stripes on and leads them
+  // off himself.
+  const toots = s.followers[0].pos;
+  let pick: Prop | null = null;
+  let pickGap = -Infinity;
   for (const prop of s.level.props) {
     if (prop.kind !== 'blame') continue;
-    const d = distToProp(s.waddles, prop);
-    if (d < nearestD) {
-      nearestD = d;
-      nearest = prop;
+    if (distToProp(s.waddles, prop) > T.DECOY_RANGE) continue;
+    const gap = distToProp(toots, prop);
+    if (gap > pickGap) {
+      pickGap = gap;
+      pick = prop;
     }
   }
 
-  const useScapegoat = nearest !== null && nearestD < 34;
+  const useScapegoat = pick !== null && pickGap >= T.DECOY_MIN_GAP;
   s.stink = applyDecoy(s.stink, useScapegoat ? 'scapegoat' : 'skunk');
   s.suspicion = applyDecoyToSuspicion(s.suspicion);
   s.decoyCooldownMs = T.DECOY_COOLDOWN_MS;
   s.decoyHoldMs = T.DECOY_HOLD_MS;
 
-  const text =
-    useScapegoat && nearest?.blameLine ? nearest.blameLine : 'AH HA! It was the CAT!';
-  const at = useScapegoat && nearest ? centerOf(nearest) : { ...s.followers[1].pos };
+  const text = useScapegoat && pick?.blameLine ? pick.blameLine : DECOY_CAT_LINE;
+  // Fluffy legs it back down the room in his stripes and they follow him, which
+  // is away from wherever Waddles is trying to get to.
+  const at = useScapegoat && pick
+    ? centerOf(pick)
+    : {
+        x: clamp(toots.x + (toots.x < T.WORLD_WIDTH / 2 ? 26 : -26), 4, T.WORLD_WIDTH - 4),
+        y: Math.max(2, toots.y - 26),
+      };
   s.blame = { text, at, leftMs: T.DECOY_HOLD_MS };
-  s.events.push({ kind: 'decoy', at, text });
+  s.events.push({ kind: 'decoy', at, text, tookTheFall: !useScapegoat });
 }
 
 function tickStink(s: RunState, dt: number): void {
@@ -510,8 +681,28 @@ function tickLocal(s: RunState, dtMs: number): void {
   if (l.mood === 'drowsy' && l.timerMs > T.SNOOZE_AFTER_MS) {
     l.mood = 'asleep';
     l.timerMs = 0;
-    s.events.push({ kind: 'local-asleep', at: { ...l.pos } });
+    // The group notices, and says so in a bubble (§9). `text` is what one of
+    // them thinks, not what anybody says out loud — §14.2 still stands.
+    s.events.push({ kind: 'local-asleep', at: { ...l.pos }, text: pickAsleepLine(s) });
   }
+}
+
+/**
+ * What the group says when the local goes under. One of them always has an
+ * opinion, and one of them teaches the player the word for it.
+ *
+ * Exported because every spoken line in the game has to be findable by the script
+ * that records them — and these are spoken now, not just printed (§14.2).
+ */
+export const ASLEEP_LINES = [
+  "Awww, he's asleep.",
+  'Oh no. He must be a Snoozalot.',
+  'Not again!',
+];
+
+function pickAsleepLine(s: RunState): string {
+  // Deterministic from the run, so the same run always reads the same.
+  return ASLEEP_LINES[Math.floor(s.elapsed * 7) % ASLEEP_LINES.length];
 }
 
 /** Bump a sleeping local, or set a poof off near them, and they jolt awake. */
@@ -539,15 +730,21 @@ export function readNose(s: RunState): NoseReading {
   const accuracy = noseAccuracy(s.stink, s.freshAirLock);
   if (accuracy <= 0.05) return { dir: null, accuracy: 0 };
 
-  let target: Vec2 = { x: s.level.exit.x + s.level.exit.width / 2, y: s.level.exit.y };
+  // He is a dog: while one fish is still out there, that is all he cares about,
+  // however far away it is.
+  let target: Vec2 | null = null;
   let best = Infinity;
   for (const n of s.nuggets) {
     if (n.taken) continue;
     const d = dist(n.pos, s.waddles);
-    if (d < best && d < 90) {
+    if (d < best) {
       best = d;
       target = n.pos;
     }
+  }
+  // Nothing left to find: only now does he want everybody out (§8).
+  if (!target) {
+    target = { x: s.level.exit.x + s.level.exit.width / 2, y: s.level.exit.y };
   }
 
   const trueAngle = Math.atan2(target.y - s.waddles.y, target.x - s.waddles.x);
@@ -583,12 +780,34 @@ function tickPuffs(s: RunState, dt: number): void {
     p.pos.y -= 6 * dt;
   }
   s.puffs = s.puffs.filter((p) => p.age < 2.2);
+
+  for (const spark of s.sparks) {
+    spark.age += dt;
+    spark.pos.y += 11 * dt;
+  }
+  s.sparks = s.sparks.filter((spark) => spark.age < T.SPARK_LIFE);
 }
 
 function checkOutcome(s: RunState): void {
+  const toots = s.followers[0];
+
+  // Somebody got a hand on him. Doesn't matter how calm the room was — unless
+  // Fluffy currently has the entire room looking at a bowl of potato salad, in
+  // which case nobody has a hand free (§7). That window is the whole reason the
+  // decoy exists, and it is what the player is spending the cooldown on.
+  if (s.decoyHoldMs <= 0) {
+    for (const p of s.crowd) {
+      if (dist(p.pos, toots.pos) < T.CATCH_RADIUS) {
+        s.outcome = 'caught';
+        s.events.push({ kind: 'caught', at: { ...toots.pos } });
+        return;
+      }
+    }
+  }
+
   if (s.suspicion >= T.SUSPICION_MAX) {
     s.outcome = 'caught';
-    s.events.push({ kind: 'caught', at: { ...s.followers[0].pos } });
+    s.events.push({ kind: 'caught', at: { ...toots.pos } });
     return;
   }
 
@@ -599,7 +818,11 @@ function checkOutcome(s: RunState): void {
     s.waddles.y > e.y - 4 &&
     s.waddles.y < e.y + e.height + 6;
 
+  s.atExit = inExit;
   if (!inExit) return;
+
+  // The gate stays shut until every nugget is in. §11.
+  if (!s.gateOpen) return;
 
   // The whole group gets out, or nobody does.
   const tail = s.followers[s.followers.length - 1];

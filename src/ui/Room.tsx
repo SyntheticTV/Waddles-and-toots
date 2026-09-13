@@ -2,27 +2,50 @@
  * The play surface. Draws one room with Skia and nothing else — no rules live
  * here, it only paints whatever `RunState` currently says.
  *
- * Placeholder art: flat shapes with heavy outlines, in the palette the design
- * bible uses. Sprites replace these later without touching the layout.
+ * The art itself lives in `src/art`: the room is assembled here, but every
+ * pencil stroke is in there, so this file stays about layout, camera and draw
+ * order.
+ *
+ * Two things worth knowing before you move code around:
+ *
+ * - Scenery is drawn at camera zero inside one translated group (`roomY`), so a
+ *   few hundred static nodes never have to be reconciled as the camera moves.
+ *   Everything that walks is drawn in screen space (`screenY`).
+ * - Actors are sorted back-to-front by world y, so someone further up the room
+ *   is drawn behind someone nearer the entrance.
  */
 
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   Canvas,
   Circle,
   Group,
   LinearGradient,
-  Path,
+  RadialGradient,
   Rect,
-  RoundedRect,
-  Skia,
   vec,
+  type Transforms3d,
 } from '@shopify/react-native-skia';
 
 import { readLocal, readNose, type RunState } from '../game/engine';
-import { hazeOpacity, stageFor } from '../game/stink';
-import { WORLD_WIDTH } from '../game/tuning';
-import type { Prop, Vec2 } from '../game/types';
+import { hazeOpacity, huntHeat, stageFor } from '../game/stink';
+import {
+  CAMERA_LOOK_AHEAD,
+  HUNT_RADIUS,
+  CAMERA_NEAR_ZOOM,
+  CAMERA_WIDE_ZOOM,
+  CAMERA_ZOOM_IN_EASE,
+  CAMERA_ZOOM_OUT_EASE,
+  CATCH_RADIUS,
+  SPARK_LIFE,
+  SUSPICION_MAX,
+  WORLD_WIDTH,
+} from '../game/tuning';
+import { Fluffy, Local, Person, Sniffsalot, Toots, Waddles } from '../art/characters';
+import { FishNugget, Poof, Pointer, Spark } from '../art/effects';
+import { clamp, withAlpha, wobble } from '../art/ink';
+import { PropArt } from '../art/props';
+import { ExitGate, Ground, Shadow, Vignette } from '../art/scenery';
 import { palette } from '../theme/palette';
 
 interface Props {
@@ -31,360 +54,371 @@ interface Props {
   height: number;
 }
 
-const PROP_FILL: Record<Prop['kind'], string> = {
-  solid: '#C9BFA6',
-  blame: '#E7D6A8',
-  freshAir: palette.breeze,
-  bump: '#F0C9AF',
+/** Once this few nuggets are left, the stragglers get a halo so they can be found. */
+const HALO_FROM = 3;
+
+/** Character heights, in world units. Everyone is scaled off these. */
+const SIZE = {
+  waddles: 12,
+  follower: 11,
+  local: 10,
+  person: 14.5,
 };
 
 export function Room({ run, width, height }: Props) {
-  const scale = width / WORLD_WIDTH;
+  // The gate swings rather than snapping, and the camera pulls back rather than
+  // cutting. These two refs are the only animation state the room keeps of its
+  // own, because the engine has no reason to know how long a hinge takes or how
+  // far away the player is standing.
+  const openness = useRef(0);
+  openness.current += ((run.gateOpen ? 1 : 0) - openness.current) * 0.09;
+
+  /*
+   * Normal play is close in on Waddles and Toots; a belly-slide pulls the camera
+   * back to the whole room and holds it there for as long as he is sliding
+   * (§10). Out is quick because the player asked for it, back in is gentler so
+   * it does not feel like being yanked.
+   */
+  const zoomRef = useRef(CAMERA_NEAR_ZOOM);
+  const wanted = run.sliding ? CAMERA_WIDE_ZOOM : CAMERA_NEAR_ZOOM;
+  const ease = wanted < zoomRef.current ? CAMERA_ZOOM_OUT_EASE : CAMERA_ZOOM_IN_EASE;
+  zoomRef.current += (wanted - zoomRef.current) * ease;
+  // Settle exactly, or `scale` never stops changing and the scenery can never
+  // stay memoised.
+  if (Math.abs(wanted - zoomRef.current) < 0.004) zoomRef.current = wanted;
+  const zoom = zoomRef.current;
+
+  const scale = (width / WORLD_WIDTH) * zoom;
   const viewHeightWorld = height / scale;
+  const t = run.elapsed;
 
   // Keep Waddles low on screen: you are always looking up into the trouble.
   const camera = clamp(
-    run.waddles.y - viewHeightWorld * 0.34,
+    run.waddles.y - viewHeightWorld * CAMERA_LOOK_AHEAD,
     0,
     Math.max(0, run.level.height - viewHeightWorld)
   );
 
+  // Zoomed in, the room is wider than the screen, so the view follows him across
+  // it too. At the wide end this clamps to zero and the whole floor is on screen.
+  const viewWidthWorld = width / scale;
+  const cameraX = clamp(
+    run.waddles.x - viewWidthWorld / 2,
+    0,
+    Math.max(0, WORLD_WIDTH - viewWidthWorld)
+  );
+
   // World y grows toward the exit, screen y grows downward, so the room is
-  // flipped: the exit at y = height sits at the top of the display.
-  const toScreenY = (worldY: number) => height - (worldY - camera) * scale;
-  const toScreenX = (worldX: number) => worldX * scale;
+  // flipped: the exit at y = height sits at the top of the display. `roomX/roomY`
+  // are the room drawn at camera zero — the static layer lives in those and is
+  // slid into place by one group transform.
+  const roomX = (worldX: number) => worldX * scale;
+  const roomY = (worldY: number) => height - worldY * scale;
+  const toScreenX = (worldX: number) => roomX(worldX) - cameraX * scale;
+  const screenY = (worldY: number) => roomY(worldY) + camera * scale;
 
   const haze = hazeOpacity(run.stink);
   const stage = stageFor(run.stink);
   const nose = readNose(run);
   const localDir = readLocal(run);
+  const decoyHolding = run.decoyHoldMs > 0;
+
+  // While Fluffy is holding them, the crowd is busy blaming, not panicking.
+  const crowdStage = decoyHolding && stage === 'panic' ? 'blame' : stage;
+  const blameAt = run.blame?.at ?? null;
+
+  // Toots knows when somebody is getting close, even before the meter does.
+  const tootsPos = run.followers[0].pos;
+  const crowded = run.crowd.some(
+    (p) => Math.hypot(p.pos.x - tootsPos.x, p.pos.y - tootsPos.y) < CATCH_RADIUS * 2.6
+  );
+
+  const left = run.nuggets.length - run.collected;
+  // Somebody who has decided it is the skunk points at the skunk, not at the
+  // potato salad — otherwise a closing ring of people reads as a chat about
+  // cheese. §5.
+  const hunting = !decoyHolding && huntHeat(run.stink) > 0;
+
+  // The clear patch the haze never covers: everything from Waddles back to the
+  // last animal in the line.
+  const tail = run.followers[run.followers.length - 1].pos;
+  const clearX = toScreenX((run.waddles.x + tail.x) / 2);
+  const clearY = screenY((run.waddles.y + tail.y) / 2);
+  const clearR =
+    (Math.hypot(run.waddles.x - tail.x, run.waddles.y - tail.y) / 2 + 15) * scale;
 
   return (
     <Canvas style={{ width, height }}>
-      {/* floor */}
-      <Rect x={0} y={0} width={width} height={height} color={palette.paperShade} />
+      {/* ------------------------------------------------ the room itself */}
+      <Group
+        transform={
+          [{ translateX: -cameraX * scale }, { translateY: camera * scale }] as Transforms3d
+        }
+      >
+        <Ground level={run.level} width={width} height={height} scale={scale} />
 
-      {/* the way out, at the top of the room */}
-      <ExitMarker run={run} scale={scale} toScreenX={toScreenX} toScreenY={toScreenY} />
-
-      {run.level.props.map((p) => (
-        <Group key={p.id}>
-          <Rect
-            x={toScreenX(p.bounds.x)}
-            y={toScreenY(p.bounds.y + p.bounds.height)}
-            width={p.bounds.width * scale}
-            height={p.bounds.height * scale}
-            color={PROP_FILL[p.kind]}
+        {run.level.props.map((p) => (
+          <PropArt
+            key={p.id}
+            prop={p}
+            x={roomX(p.bounds.x)}
+            y={roomY(p.bounds.y + p.bounds.height)}
+            w={p.bounds.width * scale}
+            h={p.bounds.height * scale}
+            t={t}
           />
-          <Rect
-            x={toScreenX(p.bounds.x)}
-            y={toScreenY(p.bounds.y + p.bounds.height)}
-            width={p.bounds.width * scale}
-            height={p.bounds.height * scale}
-            color={palette.ink}
-            style="stroke"
-            strokeWidth={2}
-          />
-          {p.kind === 'freshAir' ? (
-            <Circle
-              cx={toScreenX(p.bounds.x + p.bounds.width / 2)}
-              cy={toScreenY(p.bounds.y + p.bounds.height / 2)}
-              r={4 * scale}
-              color={palette.white}
-              opacity={0.5}
-            />
-          ) : null}
-        </Group>
-      ))}
+        ))}
 
-      {/* fish nuggets */}
+        <ExitGate
+          exit={run.level.exit}
+          scale={scale}
+          toScreenX={roomX}
+          toScreenY={roomY}
+          t={t}
+          openness={openness.current}
+          dimmed={haze > 0.4}
+        />
+      </Group>
+
+      {/* --------------------------------------------------- fish nuggets */}
       {run.nuggets.map((n, i) =>
         n.taken ? null : (
-          <Group key={i}>
-            <Circle cx={toScreenX(n.pos.x)} cy={toScreenY(n.pos.y)} r={2.6 * scale} color={palette.nugget} />
-            <Circle
-              cx={toScreenX(n.pos.x)}
-              cy={toScreenY(n.pos.y)}
-              r={2.6 * scale}
-              color={palette.ink}
-              style="stroke"
-              strokeWidth={2}
-            />
-          </Group>
+          <FishNugget
+            key={i}
+            x={toScreenX(n.pos.x)}
+            y={screenY(n.pos.y)}
+            r={2.9 * scale}
+            t={t}
+            seed={i}
+            urgent={left > 0 && left <= HALO_FROM}
+          />
         )
       )}
 
-      {/* people */}
-      {run.crowd.map((p, i) => (
-        <Person
-          key={i}
-          x={toScreenX(p.pos.x)}
-          y={toScreenY(p.pos.y)}
-          scale={scale}
-          panicking={stage === 'panic' && run.decoyHoldMs <= 0}
-          alarmed={stage === 'blame' || stage === 'panic'}
-        />
+      {/* ------------------------------------------------------- the cast */}
+      {buildActors(run, crowdStage, blameAt, nose.accuracy, crowded, hunting, nose.dir).map((a) => (
+        <Group key={a.key}>
+          <Shadow x={toScreenX(a.pos.x)} y={screenY(a.pos.y)} r={a.size * scale * 0.26} />
+          {a.render(toScreenX(a.pos.x), screenY(a.pos.y) + a.size * scale * 0.1, a.size * scale, t)}
+        </Group>
       ))}
 
-      {/* the local */}
-      <LocalAnimal
-        x={toScreenX(run.local.pos.x)}
-        y={toScreenY(run.local.pos.y)}
-        scale={scale}
-        mood={run.local.mood}
-        found={run.local.found}
-        dir={localDir}
-      />
-
-      {/* the line: Sniffsalot, Fluffy, Toots, then Waddles on top */}
-      <Animal
-        x={toScreenX(run.followers[2].pos.x)}
-        y={toScreenY(run.followers[2].pos.y)}
-        scale={scale}
-        body="#9A6A3C"
-        belly="#E4C39A"
-      />
-      <Animal
-        x={toScreenX(run.followers[1].pos.x)}
-        y={toScreenY(run.followers[1].pos.y)}
-        scale={scale}
-        body={run.decoyHoldMs > 0 ? palette.ink : '#D98A3C'}
-        belly={run.decoyHoldMs > 0 ? palette.white : '#F3C892'}
-        stripe={run.decoyHoldMs > 0}
-      />
-      <Animal
-        x={toScreenX(run.followers[0].pos.x)}
-        y={toScreenY(run.followers[0].pos.y)}
-        scale={scale}
-        body={palette.ink}
-        belly={palette.ink}
-        stripe
-      />
-      <Waddles
-        x={toScreenX(run.waddles.x)}
-        y={toScreenY(run.waddles.y)}
-        scale={scale}
-        sliding={run.sliding}
-      />
-
-      {/* Sniffsalot's pointer */}
-      {nose.dir ? (
+      {/* -------------------------------------------------- what they see */}
+      {/*
+        Sniffsalot has no arrow: he points with his nose, in the art itself. The
+        local still gets one, because a squirrel pointing a paw from up a tree
+        needs to carry across the whole room.
+      */}
+      {localDir ? (
         <Pointer
-          x={toScreenX(run.followers[2].pos.x)}
-          y={toScreenY(run.followers[2].pos.y)}
-          dir={nose.dir}
-          scale={scale}
-          color={palette.sea}
-          opacity={0.35 + nose.accuracy * 0.65}
+          x={toScreenX(run.local.pos.x)}
+          y={screenY(run.local.pos.y) - SIZE.local * scale * 0.7}
+          dir={localDir}
+          length={11 * scale}
+          color={palette.nugget}
+          opacity={0.95}
         />
       ) : null}
 
-      {/* green poofs */}
+      {/* ------------------------------------------------------ the poofs */}
       {run.puffs.map((p, i) => (
-        <Circle
+        <Poof key={i} x={toScreenX(p.pos.x)} y={screenY(p.pos.y)} age={p.age} scale={scale} />
+      ))}
+
+      {/* ------------------------------------------------- nuggets going in */}
+      {run.sparks.map((spark, i) => (
+        <Spark
           key={i}
-          cx={toScreenX(p.pos.x)}
-          cy={toScreenY(p.pos.y)}
-          r={(3 + p.age * 7) * scale}
-          color={palette.stink}
-          opacity={Math.max(0, 0.55 - p.age * 0.25)}
+          x={toScreenX(spark.pos.x)}
+          y={screenY(spark.pos.y)}
+          age={spark.age}
+          life={SPARK_LIFE}
+          scale={scale}
         />
       ))}
 
-      {/* the haze: thickest at the top, where the exit is */}
+      <Vignette width={width} height={height} />
+
+      {/* ------------------------------------------------------- the haze */}
       {haze > 0.01 ? (
-        <Rect x={0} y={0} width={width} height={height}>
-          <LinearGradient
-            start={vec(0, 0)}
-            end={vec(0, height)}
-            colors={[
-              withAlpha(palette.stink, haze),
-              withAlpha(palette.stink, haze * 0.55),
-              withAlpha(palette.stink, haze * 0.12),
-            ]}
-            positions={[0, 0.55, 1]}
-          />
-        </Rect>
+        <Group layer>
+          <Rect x={0} y={0} width={width} height={height}>
+            <LinearGradient
+              start={vec(0, 0)}
+              end={vec(0, height)}
+              colors={[
+                withAlpha(palette.stink, haze),
+                withAlpha(palette.stink, haze * 0.55),
+                withAlpha(palette.stink, haze * 0.12),
+              ]}
+              positions={[0, 0.55, 1]}
+            />
+          </Rect>
+
+          {/* clouds rolling in at the top, where the exit is */}
+          {stage === 'panic'
+            ? [0, 1, 2].map((i) => (
+                <Poof
+                  key={`drift-${i}`}
+                  x={width * (0.2 + i * 0.3) + wobble(t, 0.5 + i * 0.2, width * 0.06, i)}
+                  y={height * (0.07 + i * 0.05) + wobble(t, 0.7, 8, i * 2)}
+                  age={0}
+                  scale={scale * (2.6 + i * 0.5)}
+                  strength={0.45}
+                />
+              ))
+            : null}
+
+          {/*
+            The haze obscures distance, never the player (§5). This punches a soft
+            hole in the layer around the group, so however bad the room gets you
+            can always see your own four animals.
+          */}
+          <Circle cx={clearX} cy={clearY} r={clearR} blendMode="dstOut">
+            <RadialGradient
+              c={vec(clearX, clearY)}
+              r={clearR}
+              colors={['#000000D9', '#000000B3', '#00000000']}
+              positions={[0, 0.4, 1]}
+            />
+          </Circle>
+        </Group>
       ) : null}
     </Canvas>
   );
 }
 
-// ---------------------------------------------------------------- pieces
+// ----------------------------------------------------------------- the cast
 
-function ExitMarker({
-  run,
-  scale,
-  toScreenX,
-  toScreenY,
-}: {
-  run: RunState;
-  scale: number;
-  toScreenX: (n: number) => number;
-  toScreenY: (n: number) => number;
-}) {
-  const e = run.level.exit;
-  return (
-    <Group>
-      <RoundedRect
-        x={toScreenX(e.x)}
-        y={toScreenY(e.y + e.height)}
-        width={e.width * scale}
-        height={e.height * scale}
-        r={3}
-        color={palette.stinkWash}
+interface Actor {
+  key: string;
+  pos: { x: number; y: number };
+  /** Height in world units. */
+  size: number;
+  render: (x: number, y: number, size: number, t: number) => React.ReactElement;
+}
+
+/**
+ * Everyone in the room, sorted so that whoever is nearest the entrance is drawn
+ * last and therefore in front. It is the cheapest possible depth sort and it is
+ * all a single room needs.
+ */
+function buildActors(
+  run: RunState,
+  crowdStage: string,
+  blameAt: { x: number; y: number } | null,
+  noseAccuracy: number,
+  crowded: boolean,
+  hunting: boolean,
+  nosePoint: { x: number; y: number } | null
+): Actor[] {
+  const actors: Actor[] = [];
+  const tootsPos = run.followers[0].pos;
+
+  run.crowd.forEach((p, i) => {
+    const chasing =
+      hunting && Math.hypot(p.pos.x - tootsPos.x, p.pos.y - tootsPos.y) < HUNT_RADIUS;
+    const lookAt = chasing ? tootsPos : blameAt;
+    const pointDir = lookAt ? Math.sign(lookAt.x - p.pos.x) : 0;
+    actors.push({
+      key: `person-${i}`,
+      pos: p.pos,
+      size: SIZE.person,
+      render: (x, y, size, t) => (
+        <Person x={x} y={y} size={size} t={t} seed={i} stage={crowdStage} pointDir={pointDir} />
+      ),
+    });
+  });
+
+  actors.push({
+    key: 'local',
+    pos: run.local.pos,
+    size: SIZE.local,
+    render: (x, y, size, t) => (
+      <Local
+        x={x}
+        y={y}
+        size={size}
+        t={t}
+        species={run.local.species}
+        mood={run.local.mood}
+        found={run.local.found}
       />
-      <RoundedRect
-        x={toScreenX(e.x)}
-        y={toScreenY(e.y + e.height)}
-        width={e.width * scale}
-        height={e.height * scale}
-        r={3}
-        color={palette.stinkDeep}
-        style="stroke"
-        strokeWidth={3}
+    ),
+  });
+
+  const [toots, fluffy, sniffsalot] = run.followers;
+  const nervous = crowded || run.suspicion > SUSPICION_MAX * 0.5;
+
+  actors.push({
+    key: 'sniffsalot',
+    pos: sniffsalot.pos,
+    size: SIZE.follower,
+    render: (x, y, size, t) => (
+      <Sniffsalot
+        x={x}
+        y={y}
+        size={size}
+        t={t}
+        flip={sniffsalot.facing.x < -0.2}
+        moving={sniffsalot.moving}
+        accuracy={noseAccuracy}
+        point={nosePoint}
       />
-    </Group>
-  );
-}
+    ),
+  });
 
-function Animal({
-  x,
-  y,
-  scale,
-  body,
-  belly,
-  stripe,
-}: {
-  x: number;
-  y: number;
-  scale: number;
-  body: string;
-  belly: string;
-  stripe?: boolean;
-}) {
-  const r = 3.4 * scale;
-  return (
-    <Group>
-      <Circle cx={x} cy={y} r={r} color={body} />
-      {stripe ? <Rect x={x - r * 0.25} y={y - r} width={r * 0.5} height={r * 2} color={palette.white} /> : null}
-      {!stripe ? <Circle cx={x} cy={y + r * 0.25} r={r * 0.55} color={belly} /> : null}
-      <Circle cx={x} cy={y} r={r} color={palette.ink} style="stroke" strokeWidth={2} />
-    </Group>
-  );
-}
+  actors.push({
+    key: 'fluffy',
+    pos: fluffy.pos,
+    size: SIZE.follower,
+    render: (x, y, size, t) => (
+      <Fluffy
+        x={x}
+        y={y}
+        size={size}
+        t={t}
+        flip={fluffy.facing.x < -0.2}
+        moving={fluffy.moving}
+        decoy={run.decoyHoldMs > 0}
+      />
+    ),
+  });
 
-function Waddles({ x, y, scale, sliding }: { x: number; y: number; scale: number; sliding: boolean }) {
-  const r = 4 * scale;
-  return (
-    <Group>
-      {sliding ? <Circle cx={x} cy={y} r={r * 1.6} color={palette.breeze} opacity={0.45} /> : null}
-      <Circle cx={x} cy={y} r={r} color={palette.ink} />
-      <Circle cx={x} cy={y + r * 0.2} r={r * 0.62} color={palette.white} />
-      <Circle cx={x} cy={y - r * 0.45} r={r * 0.24} color={palette.nugget} />
-      <Circle cx={x} cy={y} r={r} color={palette.ink} style="stroke" strokeWidth={2.5} />
-    </Group>
-  );
-}
+  actors.push({
+    key: 'toots',
+    pos: toots.pos,
+    size: SIZE.follower,
+    render: (x, y, size, t) => (
+      <Toots
+        x={x}
+        y={y}
+        size={size}
+        t={t}
+        flip={toots.facing.x < -0.2}
+        moving={toots.moving}
+        nervous={nervous}
+      />
+    ),
+  });
 
-function Person({
-  x,
-  y,
-  scale,
-  panicking,
-  alarmed,
-}: {
-  x: number;
-  y: number;
-  scale: number;
-  panicking: boolean;
-  alarmed: boolean;
-}) {
-  const r = 3 * scale;
-  const color = panicking ? palette.alarm : alarmed ? '#B98B7A' : '#9D9384';
-  return (
-    <Group>
-      <Circle cx={x} cy={y} r={r} color={color} />
-      <Circle cx={x} cy={y} r={r} color={palette.ink} style="stroke" strokeWidth={1.5} />
-      {panicking ? (
-        <>
-          <Circle cx={x - r} cy={y - r * 1.5} r={r * 0.3} color={palette.ink} />
-          <Circle cx={x + r} cy={y - r * 1.5} r={r * 0.3} color={palette.ink} />
-        </>
-      ) : null}
-    </Group>
-  );
-}
+  actors.push({
+    key: 'waddles',
+    pos: run.waddles,
+    size: SIZE.waddles,
+    render: (x, y, size, t) => (
+      <Waddles
+        x={x}
+        y={y}
+        size={size}
+        t={t}
+        flip={run.facing.x < -0.2}
+        moving={run.moving}
+        sliding={run.sliding}
+      />
+    ),
+  });
 
-function LocalAnimal({
-  x,
-  y,
-  scale,
-  mood,
-  found,
-  dir,
-}: {
-  x: number;
-  y: number;
-  scale: number;
-  mood: string;
-  found: boolean;
-  dir: Vec2 | null;
-}) {
-  const r = 2.6 * scale;
-  const asleep = mood === 'asleep';
-  const drowsy = mood === 'drowsy';
-  return (
-    <Group>
-      <Circle cx={x} cy={y} r={r} color={asleep ? '#B5AE9C' : '#B0743F'} opacity={found ? 1 : 0.75} />
-      <Circle cx={x} cy={y} r={r} color={palette.ink} style="stroke" strokeWidth={2} />
-      {/* the tell: eyelids drooping before they go */}
-      {drowsy ? <Rect x={x - r * 0.7} y={y - r * 0.35} width={r * 1.4} height={r * 0.3} color={palette.ink} /> : null}
-      {asleep ? <Circle cx={x + r * 1.3} cy={y - r * 1.2} r={r * 0.45} color={palette.white} /> : null}
-      {dir ? <Pointer x={x} y={y} dir={dir} scale={scale} color={palette.sea} opacity={0.9} /> : null}
-    </Group>
-  );
-}
-
-function Pointer({
-  x,
-  y,
-  dir,
-  scale,
-  color,
-  opacity,
-}: {
-  x: number;
-  y: number;
-  dir: Vec2;
-  scale: number;
-  color: string;
-  opacity: number;
-}) {
-  const len = 9 * scale;
-  // World y is up, screen y is down.
-  const tipX = x + dir.x * len;
-  const tipY = y - dir.y * len;
-  const path = Skia.Path.Make();
-  path.moveTo(x, y);
-  path.lineTo(tipX, tipY);
-  return (
-    <Group opacity={opacity}>
-      <Path path={path} color={color} style="stroke" strokeWidth={3} strokeCap="round" />
-      <Circle cx={tipX} cy={tipY} r={2 * scale} color={color} />
-    </Group>
-  );
-}
-
-// ----------------------------------------------------------------- utils
-
-function clamp(v: number, lo: number, hi: number) {
-  return v < lo ? lo : v > hi ? hi : v;
-}
-
-function withAlpha(hex: string, alpha: number): string {
-  const a = Math.round(clamp(alpha, 0, 1) * 255)
-    .toString(16)
-    .padStart(2, '0');
-  return `${hex}${a}`;
+  // Furthest up the room first, so the near ones overlap them.
+  return actors.sort((a, b) => b.pos.y - a.pos.y);
 }

@@ -3,8 +3,8 @@
  * the bottom thumb zone, clear of the safe-area inset.
  */
 
-import React, { useCallback } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 
@@ -62,11 +62,28 @@ export function Dpad({ onChange }: { onChange: (dir: Vec2) => void }) {
   );
 }
 
+/**
+ * A game button.
+ *
+ * It is a gesture-handler button rather than a `Pressable` for two reasons, both
+ * learned the hard way on the slide:
+ *
+ * 1. **Two thumbs at once.** Sliding means holding the d-pad *and* this button —
+ *    and the d-pad is a gesture-handler pan. Mixing React Native's touch
+ *    responder with gesture-handler means the second finger is the one that gets
+ *    dropped, so the slide simply never fired while you were moving. Both
+ *    controls now live in the same touch system.
+ *
+ * 2. **Never strand the hold.** A `Pressable` that becomes `disabled` mid-press
+ *    never fires `onPressOut`, which left `slideHeld` stuck on: the moment the
+ *    leash recovered, Waddles shot off on his own. This always fires its release,
+ *    so `unavailable` only greys the button out — it never swallows the gesture.
+ */
 export function ActionButton({
   label,
   hint,
   color,
-  disabled,
+  unavailable,
   charge,
   onPressIn,
   onPressOut,
@@ -75,28 +92,57 @@ export function ActionButton({
   label: string;
   hint: string;
   color: string;
-  disabled?: boolean;
-  /** 0–1, drawn as a ring of remaining slide or cooldown. */
+  /** Drawn as greyed out. Deliberately does not block the touch. */
+  unavailable?: boolean;
+  /** 0–1, drawn as a bar of remaining slide or cooldown. */
   charge: number;
   onPressIn?: () => void;
   onPressOut?: () => void;
   onPress?: () => void;
 }) {
+  const [pressed, setPressed] = useState(false);
+
+  const begin = useCallback(() => {
+    setPressed(true);
+    onPressIn?.();
+  }, [onPressIn]);
+
+  const end = useCallback(() => {
+    setPressed(false);
+    onPressOut?.();
+    onPress?.();
+  }, [onPressOut, onPress]);
+
+  const gesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .minDistance(0)
+        // A thumb that slides off the button mid-slide is still holding it.
+        .shouldCancelWhenOutside(false)
+        .onBegin(() => {
+          'worklet';
+          runOnJS(begin)();
+        })
+        .onFinalize(() => {
+          'worklet';
+          runOnJS(end)();
+        }),
+    [begin, end]
+  );
+
   return (
     <View style={styles.buttonWrap}>
-      <Pressable
-        onPressIn={onPressIn}
-        onPressOut={onPressOut}
-        onPress={onPress}
-        disabled={disabled}
-        style={({ pressed }) => [
-          styles.button,
-          { backgroundColor: disabled ? '#C9C4B5' : color },
-          pressed && styles.buttonPressed,
-        ]}
-      >
-        <Text style={styles.buttonLabel}>{label}</Text>
-      </Pressable>
+      <GestureDetector gesture={gesture}>
+        <View
+          style={[
+            styles.button,
+            { backgroundColor: unavailable ? '#C9C4B5' : color },
+            pressed && styles.buttonPressed,
+          ]}
+        >
+          <Text style={styles.buttonLabel}>{label}</Text>
+        </View>
+      </GestureDetector>
       <View style={styles.chargeTrack}>
         <View style={[styles.chargeFill, { width: `${Math.round(charge * 100)}%` }]} />
       </View>

@@ -12,6 +12,7 @@ export const backyardBbq: LevelSpec = {
   name: 'Backyard BBQ',
   exitLabel: 'the side gate',
   height: 460,
+  scenery: 'yard',
 
   entry: { x: 50, y: 10 },
   exit: { x: 60, y: 446, width: 24, height: 14 },
@@ -60,6 +61,11 @@ export const backyardBbq: LevelSpec = {
     { id: 'croquet-set', kind: 'bump', bounds: { x: 70, y: 300, width: 14, height: 8 } },
     { id: 'wind-chime', kind: 'bump', bounds: { x: 40, y: 398, width: 8, height: 8 } },
     { id: 'water-bowl', kind: 'bump', bounds: { x: 18, y: 62, width: 9, height: 7 } },
+
+    // --- ways out that are not the way out ---------------------------------
+    // Room one is the gentle one, so there is exactly one dud and it is nowhere
+    // near the real gate (§10). Later rooms get more, and closer.
+    { id: 'shed-door', kind: 'falseExit', bounds: { x: 4, y: 424, width: 16, height: 20 } },
 
     // --- furniture ---------------------------------------------------------
     { id: 'picnic-table', kind: 'solid', bounds: { x: 28, y: 88, width: 28, height: 22 } },

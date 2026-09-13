@@ -8,7 +8,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { RunState } from '../game/engine';
 import { stageFor } from '../game/stink';
-import { STINK_MAX, SUSPICION_MAX } from '../game/tuning';
+import { LEASH_WARN, STINK_MAX, SUSPICION_MAX } from '../game/tuning';
 import { palette } from '../theme/palette';
 
 const STAGE_LABEL: Record<string, string> = {
@@ -18,10 +18,25 @@ const STAGE_LABEL: Record<string, string> = {
   panic: 'EVERYBODY OUT',
 };
 
-export function Hud({ run, topInset }: { run: RunState; topInset: number }) {
+export function Hud({
+  run,
+  topInset,
+  asleepLine,
+}: {
+  run: RunState;
+  topInset: number;
+  /** What one of the animals thinks about the local nodding off, if anything. */
+  asleepLine: string | null;
+}) {
   const stage = stageFor(run.stink);
   const stinkPct = Math.round((run.stink / STINK_MAX) * 100);
   const suspicionPct = Math.round((run.suspicion / SUSPICION_MAX) * 100);
+  const total = run.nuggets.length;
+  const left = total - run.collected;
+  // Standing in an open gateway with the line strung out behind you is the one
+  // place the game can look broken, so it gets its own line.
+  const tail = run.followers[run.followers.length - 1].pos;
+  const strungOut = Math.hypot(run.waddles.x - tail.x, run.waddles.y - tail.y) > LEASH_WARN;
 
   return (
     <View style={[styles.wrap, { paddingTop: topInset + 8 }]} pointerEvents="none">
@@ -34,9 +49,22 @@ export function Hud({ run, topInset }: { run: RunState; topInset: number }) {
           <Text style={[styles.stage, { color: stinkColor(stage) }]}>{STAGE_LABEL[stage]}</Text>
         </View>
 
+        {/*
+          The nuggets are the objective now (§11), so this has to read as a
+          checklist rather than a score: how many are left, at a glance, without
+          counting anything.
+        */}
         <View style={styles.nuggets}>
-          <Text style={styles.nuggetCount}>{run.collected}</Text>
-          <Text style={styles.label}>NUGGETS</Text>
+          <Text style={styles.nuggetCount}>
+            {run.collected}
+            <Text style={styles.nuggetTotal}>/{total}</Text>
+          </Text>
+          <Text style={styles.label}>FISH</Text>
+          <View style={styles.pips}>
+            {run.nuggets.map((n, i) => (
+              <View key={i} style={[styles.pip, n.taken && styles.pipOn]} />
+            ))}
+          </View>
         </View>
       </View>
 
@@ -49,8 +77,18 @@ export function Hud({ run, topInset }: { run: RunState; topInset: number }) {
         </View>
       ) : null}
 
-      {run.leashBroken ? (
+      {/* The one thing a player must never be confused about: why can't I leave? */}
+      {run.atExit && !run.gateOpen ? (
+        <Banner
+          text={`The gate won't budge — ${left} more fish to find!`}
+          color={palette.alarm}
+        />
+      ) : run.atExit && strungOut ? (
+        <Banner text="Everyone through together!" color={palette.alarm} />
+      ) : run.leashBroken ? (
         <Banner text="Wait for the others!" color={palette.alarm} />
+      ) : run.gateOpen ? (
+        <Banner text="That's all of them — get out!" color={palette.stinkDeep} />
       ) : run.freshAirLock > 0 ? (
         <Banner text="Fresh air — the nose is working" color={palette.sea} />
       ) : null}
@@ -61,9 +99,24 @@ export function Hud({ run, topInset }: { run: RunState; topInset: number }) {
         </View>
       ) : null}
 
+      {/*
+        What the group makes of it. This is a *bubble*, not a voice: the animals
+        never speak out loud (§14.2), but they are certainly allowed an opinion.
+      */}
+      {asleepLine ? <ThoughtBubble text={asleepLine} /> : null}
+
       {run.local.found && run.local.mood === 'asleep' ? (
-        <Banner text={`The ${run.local.species} fell asleep.`} color={palette.inkSoft} />
+        <Banner text={`The ${run.local.species} is asleep. Wake him?`} color={palette.inkSoft} />
       ) : null}
+    </View>
+  );
+}
+
+/** An animal having a thought. Rounder and softer than a person's speech. */
+function ThoughtBubble({ text }: { text: string }) {
+  return (
+    <View style={styles.thought}>
+      <Text style={styles.thoughtText}>{text}</Text>
     </View>
   );
 }
@@ -111,13 +164,30 @@ const styles = StyleSheet.create({
   fill: { height: '100%' },
   stage: { fontSize: 12, fontWeight: '800' },
 
-  nuggets: { alignItems: 'center' },
+  nuggets: { alignItems: 'center', maxWidth: 128 },
   nuggetCount: {
     fontSize: 26,
     fontWeight: '800',
     color: palette.nugget,
     lineHeight: 28,
   },
+  nuggetTotal: { fontSize: 15, fontWeight: '800', color: palette.inkSoft },
+  pips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 3,
+    marginTop: 4,
+  },
+  pip: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: palette.inkSoft,
+    backgroundColor: 'transparent',
+  },
+  pipOn: { backgroundColor: palette.nugget, borderColor: palette.ink },
 
   suspicionBlock: { gap: 3 },
   suspicionLabel: { fontSize: 11, fontWeight: '800', color: palette.alarm },
@@ -140,6 +210,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFFEE',
   },
   bannerText: { fontSize: 13, fontWeight: '800' },
+
+  thought: {
+    alignSelf: 'center',
+    backgroundColor: palette.paper,
+    borderWidth: 3,
+    borderColor: palette.inkSoft,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    maxWidth: '86%',
+  },
+  thoughtText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: palette.inkSoft,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
 
   bubble: {
     alignSelf: 'center',

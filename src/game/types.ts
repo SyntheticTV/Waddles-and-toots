@@ -23,12 +23,24 @@ export interface Rect {
   height: number;
 }
 
+/**
+ * What the room is made of, so the art knows whether to lay down grass or a
+ * floor. Rooms default to 'yard'.
+ */
+export type SceneryKind = 'yard' | 'indoor';
+
 /** How far along the stink meter the crowd is. See GAME_DESIGN.md §5. */
 export type StinkStage = 'calm' | 'sniff' | 'blame' | 'panic';
 
 export type PropKind =
   /** Something the crowd can wrongly blame the smell on. */
   | 'blame'
+  /**
+   * A door, gate, hatch or window that looks like the way out and is not (§10).
+   * Walking into one does nothing at all, which is the point: from room three
+   * onward the exit has to be *found*, and that is what the local is for.
+   */
+  | 'falseExit'
   /** Open window, ocean breeze, AC vent — clears Sniffsalot's nose. */
   | 'freshAir'
   /** Startles Toots on contact: gurgle, poof, the meter jumps. */
@@ -73,6 +85,8 @@ export interface LevelSpec {
   exitLabel: string;
   /** Room height in world units. Width is always WORLD_WIDTH. */
   height: number;
+  /** What the floor of this room is. Defaults to 'yard'. */
+  scenery?: SceneryKind;
   /** Where the conga line comes in, at the bottom. */
   entry: Vec2;
   /** The way out, at the top. */

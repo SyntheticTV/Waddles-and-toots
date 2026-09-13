@@ -30,8 +30,11 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env*.local
+# local env files — secrets live here and must never be committed.
+# `.env` is read only by the build scripts in tools/, never by the app.
+.env
+.env.*
+!.env.example
 
 # typescript
 *.tsbuildinfo

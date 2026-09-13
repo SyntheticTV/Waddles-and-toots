@@ -7,6 +7,8 @@
 import type { StinkStage } from './types';
 import {
   CROWD_DENSITY_MULTIPLIER,
+  HUNT_FLAT_OUT,
+  HUNT_FROM,
   DECOY_SCAPEGOAT_RELIEF,
   DECOY_SKUNK_RELIEF,
   DECOY_SUSPICION_RELIEF,
@@ -36,6 +38,18 @@ export function stageIndex(stage: StinkStage): 0 | 1 | 2 | 3 {
   return stage === 'panic' ? 3 : stage === 'blame' ? 2 : stage === 'sniff' ? 1 : 0;
 }
 
+/**
+ * How badly the room wants to lay hands on the skunk, 0 to 1.
+ *
+ * Nothing below `HUNT_FROM`, rising to flat out by `HUNT_FLAT_OUT` — squared, so
+ * the back half of the meter is where it really turns nasty rather than it
+ * creeping up evenly the whole way. §5.
+ */
+export function huntHeat(stink: number): number {
+  const t = clamp((stink - HUNT_FROM) / (HUNT_FLAT_OUT - HUNT_FROM), 0, 1);
+  return t * t;
+}
+
 export interface StinkTick {
   /** Seconds since the last tick. */
   dt: number;
@@ -48,16 +62,18 @@ export interface StinkTick {
 }
 
 /**
- * The meter only ever climbs on its own. Everything the player does is about
- * slowing it down or spending something to buy it back.
+ * The meter only ever climbs. Nothing the player can do makes it fall — a decoy
+ * or a lungful of fresh air holds it where it is, and that is the whole of the
+ * relief on offer (§5). Every tool buys time, never ground.
  */
 export function advanceStink(stink: number, tick: StinkTick): number {
+  // Held, not helped: the crowd is looking elsewhere and nothing is getting worse.
   if (tick.decoyHolding) return stink;
+  // Standing in it stops the clock; walking out of it starts it again.
+  if (tick.inFreshAir) return stink;
 
   let rate = STINK_DRIFT_PER_SEC;
   if (tick.crowded) rate *= CROWD_DENSITY_MULTIPLIER;
-  // Fresh air doesn't remove the smell, it just stops it pooling.
-  if (tick.inFreshAir) rate *= 0.35;
 
   return clamp(stink + rate * tick.dt, 0, STINK_MAX);
 }
