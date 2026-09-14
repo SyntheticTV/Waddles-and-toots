@@ -55,9 +55,11 @@ export function GameScreen({
   const inputRef = useRef<InputState>({ move: { x: 0, y: 0 }, slideHeld: false, decoyPressed: false });
   const [, setFrame] = useState(0);
 
-  // The yard and the pressure bed belong to a run, not to the app.
+  // The room bed and the pressure bed belong to a run, not to the app. The room
+  // is handed over here so the first frame already sounds like the right place;
+  // `followRun` keeps it honest if the level changes underneath.
   useEffect(() => {
-    enterGame();
+    enterGame(level.scenery);
     return leaveGame;
   }, []);
 

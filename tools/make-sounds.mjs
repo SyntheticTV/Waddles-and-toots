@@ -564,6 +564,84 @@ sounds['bed-yard'] = () => {
 };
 
 /**
+ * The dining room: a low babble of people eating, cutlery, the odd glass, and
+ * the kitchen extractor grumbling away behind it. Loops.
+ *
+ * The babble has to stay *unintelligible*. This room is already full of people
+ * saying actual punchlines, and a bed with words in it competes with the joke —
+ * so every vowel is moving and none of them ever lands, which is what a
+ * conversation three tables away actually sounds like.
+ */
+sounds['bed-room'] = () => {
+  const len = 9.4;
+  const out = buf(len);
+
+  // The extractor. Every restaurant has one and nobody ever hears it.
+  mix(out, lowpass(noise({ dur: len, amp: 0.5 }), 170), 0, 0.55);
+  mix(out, tone({ dur: len, freq: 104, type: 'tri', amp: 0.16 }), 0, 1);
+
+  // Four conversations, none of them ours, overlapping unevenly so the room
+  // never falls silent and never sounds like a queue.
+  const babble = buf(len);
+  const talkers = [
+    { pitch: 124, from: 0.0, every: 1.9, dur: 1.15 },
+    { pitch: 187, from: 0.8, every: 2.3, dur: 0.85 },
+    { pitch: 146, from: 1.7, every: 2.7, dur: 1.35 },
+    { pitch: 209, from: 2.5, every: 3.1, dur: 0.75 },
+  ];
+  for (const who of talkers) {
+    for (let t = who.from; t < len; t += who.every) {
+      const a = 430 + 250 * Math.sin(t * 2.3);
+      const b = 1150 + 600 * Math.sin(t * 1.7 + 1.1);
+      mix(
+        babble,
+        vowel({
+          dur: who.dur,
+          pitch: (u) => who.pitch * (1 + 0.05 * Math.sin(TAU * 1.1 * u + t)),
+          formants: [
+            [(u) => a + 140 * Math.sin(TAU * 1.4 * u), 1],
+            [(u) => b + 260 * Math.sin(TAU * 0.9 * u + 2), 0.5],
+            [2500, 0.1],
+          ],
+          amp: swell(who.dur, 1.3),
+          wobble: 0.03,
+        }),
+        t,
+        0.5
+      );
+    }
+  }
+  // Muffled, because it is coming from the other side of the room.
+  mix(out, lowpass(babble, 1700), 0, 0.42);
+
+  // Cutlery on plates. Unevenly spaced, or it turns into a drum machine.
+  const tick = (freq) => {
+    const b = buf(0.07);
+    mix(b, bandpass(noise({ dur: 0.06, amp: hit(0.0006, 0.011) }), freq, 9), 0, 1);
+    mix(b, tone({ dur: 0.05, freq: freq * 1.93, amp: hit(0.0004, 0.007) }), 0, 0.3);
+    return b;
+  };
+  const cutlery = [
+    [0.42, 3300], [0.55, 4100], [1.35, 2900], [2.08, 3800], [2.19, 3400],
+    [3.11, 4400], [3.9, 3050], [4.62, 3600], [4.74, 4200], [5.48, 2850],
+    [6.35, 3900], [6.47, 3350], [7.2, 4500], [8.05, 3150], [8.71, 3700],
+  ];
+  for (const [t0, f] of cutlery) mix(out, tick(f), t0, 0.28);
+
+  // A glass set down, twice in nine seconds. The one bright thing in here.
+  const clink = (freq) => {
+    const b = buf(0.5);
+    mix(b, tone({ dur: 0.45, freq, amp: hit(0.001, 0.12) }), 0, 0.8);
+    mix(b, tone({ dur: 0.3, freq: freq * 2.76, amp: hit(0.001, 0.045) }), 0, 0.28);
+    return b;
+  };
+  mix(out, clink(1760), 1.85, 0.3);
+  mix(out, clink(2090), 7.55, 0.24);
+
+  return seamless(out, 1.2);
+};
+
+/**
  * The pressure. A low uneasy drone the game fades up as the meter climbs, so the
  * room feels worse before anybody says anything. Loops.
  */
@@ -823,6 +901,7 @@ const PEAK = {
   startle: 0.6,
   'gate-open': 0.8,
   'bed-yard': 0.34,
+  'bed-room': 0.34,
   'bed-stink': 0.4,
   slide: 0.6,
   sniff: 0.62,

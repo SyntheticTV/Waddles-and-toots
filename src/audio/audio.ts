@@ -24,8 +24,9 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-aud
 import type { RunState } from '../game/engine';
 import { stageFor } from '../game/stink';
 import { STINK_MAX } from '../game/tuning';
+import type { SceneryKind } from '../game/types';
 import { getSettings, subscribeToSettings } from '../settings';
-import { SOUNDS, type SoundId } from './library';
+import { BED_FOR_SCENERY, ROOM_BEDS, SOUNDS, type SoundId } from './library';
 import { hushVoices, sayNoticed, sayPanic } from './voices';
 
 /** Below this the room is clean enough that the pressure bed stays silent. */
@@ -44,6 +45,17 @@ const SNORE_EVERY = 3.1;
 /** Native volume calls are not free — only push a change this big or bigger. */
 const VOLUME_EPSILON = 0.04;
 
+/**
+ * How far the jingle drops while somebody is talking.
+ *
+ * It has to be a long way down. The crowd's lines are the game — the joke, and
+ * on a bad-smelling day the only thing telling you what the room thinks — and a
+ * tune sitting a few dB under a recorded voice is exactly the mix where the
+ * words stop being words. Losing the music for two seconds costs nothing;
+ * losing a punchline costs the round.
+ */
+const DUCK = 0.25;
+
 interface Voices {
   players: AudioPlayer[];
   next: number;
@@ -54,6 +66,8 @@ interface Bank {
   level: Map<SoundId, number>;
   was: { stage: string; sliding: boolean; freshAir: boolean; outcome: string; localMood: string };
   inGame: boolean;
+  /** Which room bed belongs to the level being played. */
+  bed: (typeof ROOM_BEDS)[number];
   /** When the sleeping local last snored, on the run's own clock. */
   lastSnoreAt: number;
 }
@@ -142,11 +156,12 @@ export function startAudio(): void {
     level: new Map(),
     was: { stage: 'calm', sliding: false, freshAir: false, outcome: 'playing', localMood: 'waiting' },
     inGame: false,
+    bed: 'bed-yard',
     lastSnoreAt: -99,
   };
 
   // Everything that loops starts now and never stops; only volume moves.
-  (['bed-yard', 'bed-stink', 'music-jingle'] as const).forEach((id) => {
+  ([...ROOM_BEDS, 'bed-stink', 'music-jingle'] as const).forEach((id) => {
     const player = firstVoice(id);
     if (!player) return;
     player.loop = true;
@@ -192,12 +207,12 @@ export function applyAudioSettings(): void {
   if (!bank) return;
   const { sound, music } = getSettings();
 
-  setLevel('music-jingle', music ? SOUNDS['music-jingle'].gain * (ducked ? 0.3 : 1) : 0);
+  setLevel('music-jingle', music ? SOUNDS['music-jingle'].gain * (ducked ? DUCK : 1) : 0);
   if (!sound) {
-    setLevel('bed-yard', 0);
+    ROOM_BEDS.forEach((id) => setLevel(id, 0));
     setLevel('bed-stink', 0);
   } else if (bank.inGame) {
-    setLevel('bed-yard', SOUNDS['bed-yard'].gain);
+    setRoomBed(bank.bed);
   }
 }
 
@@ -264,6 +279,16 @@ export function stopVoiceClips(): void {
 }
 
 /**
+ * Raises one room bed and silences the rest, so a room only ever sounds like
+ * itself.
+ */
+function setRoomBed(id: (typeof ROOM_BEDS)[number], loudness = 1): void {
+  ROOM_BEDS.forEach((other) => {
+    setLevel(other, other === id ? SOUNDS[id].gain * loudness : 0);
+  });
+}
+
+/**
  * Pulls the jingle down under a spoken line and puts it back afterwards. Called
  * by the voice layer, which is the only thing that talks.
  */
@@ -277,9 +302,10 @@ export function duckMusic(on: boolean): void {
  * The room beds belong to a run, not to the app. Entering also forgets what the
  * last run sounded like, so a retry announces its first sniff again.
  */
-export function enterGame(): void {
+export function enterGame(scenery: SceneryKind = 'yard'): void {
   if (!bank) return;
   bank.inGame = true;
+  bank.bed = BED_FOR_SCENERY[scenery];
   bank.was = {
     stage: 'calm',
     sliding: false,
@@ -295,7 +321,7 @@ export function leaveGame(): void {
   hushVoices();
   if (!bank) return;
   bank.inGame = false;
-  setLevel('bed-yard', 0);
+  ROOM_BEDS.forEach((id) => setLevel(id, 0));
   setLevel('bed-stink', 0);
 }
 
@@ -332,7 +358,13 @@ export function followRun(run: RunState): void {
     ? 0
     : Math.max(0, Math.min(1, (run.stink - BED_FLOOR) / (STINK_MAX - BED_FLOOR)));
   setLevel('bed-stink', audible ? SOUNDS['bed-stink'].gain * pressure * pressure : 0);
-  setLevel('bed-yard', audible ? SOUNDS['bed-yard'].gain * (over ? 0.4 : 1) : 0);
+
+  // The room's own bed follows the level, not the app: a restaurant has no wind
+  // in it. Read every frame rather than latched at `enterGame`, because the
+  // screen brackets the whole session and the level under it can change.
+  bank.bed = BED_FOR_SCENERY[run.level.scenery ?? 'yard'];
+  if (audible) setRoomBed(bank.bed, over ? 0.4 : 1);
+  else ROOM_BEDS.forEach((id) => setLevel(id, 0));
 
   // The room turning. Each stage announces itself once, on the way up — with a
   // sound, and with somebody actually saying it.

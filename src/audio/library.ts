@@ -10,6 +10,7 @@
  */
 
 import type { GameEventKind } from '../game/engine';
+import type { SceneryKind } from '../game/types';
 
 export interface SoundSpec {
   source: number;
@@ -51,18 +52,35 @@ export const SOUNDS = {
 
   /** The yard, always there. */
   'bed-yard': { source: require('../../assets/audio/bed-yard.wav'), gain: 0.5, voices: 1, loop: true },
+  /** Indoors: babble, cutlery, and the extractor. Always there. */
+  'bed-room': { source: require('../../assets/audio/bed-room.wav'), gain: 0.5, voices: 1, loop: true },
   /** The pressure, faded up by the meter. */
   'bed-stink': { source: require('../../assets/audio/bed-stink.wav'), gain: 0.7, voices: 1, loop: true },
   /** The jingle, on its own switch in settings. Plays everywhere. */
   'music-jingle': {
     source: require('../../assets/audio/music-jingle.wav'),
-    gain: 0.42,
+    gain: 0.3,
     voices: 1,
     loop: true,
   },
 } as const satisfies Record<string, SoundSpec>;
 
 export type SoundId = keyof typeof SOUNDS;
+
+/**
+ * What the room itself sounds like. A restaurant does not have wind in the
+ * hedge, and a bed that belongs to the wrong room is the kind of thing a player
+ * hears immediately without being able to say why.
+ *
+ * Exactly one of these plays at a time; the audio service fades the others out
+ * when the room changes.
+ */
+export const ROOM_BEDS = ['bed-yard', 'bed-room'] as const satisfies readonly SoundId[];
+
+export const BED_FOR_SCENERY: Record<SceneryKind, (typeof ROOM_BEDS)[number]> = {
+  yard: 'bed-yard',
+  indoor: 'bed-room',
+};
 
 /**
  * What each thing the simulation reports sounds like. Everything else the audio

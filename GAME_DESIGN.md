@@ -369,7 +369,7 @@ Settings is two switches, remembered between sessions:
 
 | Switch | What it covers |
 |---|---|
-| **Sound** | Gurgles, poofs, nuggets, the crowd, the yard and the pressure bed |
+| **Sound** | Gurgles, poofs, nuggets, the crowd, the room's own bed and the pressure bed |
 | **Music** | The jingle, and nothing else |
 
 The phone's own silent switch mutes everything, which is the control a parent
@@ -484,13 +484,18 @@ a sensible route rather than in a corner nobody visits.
   and paced from a hash of the line so the one blaming the potato salad always
   sounds like the same person and never sounds like the one blaming the grill.
   One line at a time, by priority — a shout cuts off a mutter, a mutter waits its
-  turn or is dropped — and the jingle ducks underneath
+  turn or is dropped — and the jingle drops a long way underneath, because the
+  line is the joke and the tune is only furniture
 - **Audio:** `expo-audio`, playing a synthesised set built by `tools/make-sounds.mjs`
   — the gurgle-and-poof, the nugget, Fluffy's whistle, the crowd sniffing and
   then blaming and then going up all at once, the win fanfare and the losing
-  trombone, the latch letting go when the last fish goes in, plus two looping beds: the yard, and a low pressure drone the game
-  fades up as the meter climbs so the room feels worse before anybody says
-  anything. Sounds are code, like the art, so a gag can be retimed in a line
+  trombone, the latch letting go when the last fish goes in, plus looping beds:
+  **one per room** — wind and birds in the yard, babble and cutlery and the
+  extractor in the restaurant — over a low pressure drone the game fades up as
+  the meter climbs so the room feels worse before anybody says anything. Exactly
+  one room bed plays at a time, chosen by the level's scenery, because a
+  restaurant with wind in it is wrong in a way a player hears immediately and
+  cannot name. Sounds are code, like the art, so a gag can be retimed in a line
 - **Haptics:** `expo-haptics` — a little buzz on every poof
 - **Save:** `@react-native-async-storage/async-storage`; save on level end, always
 - **Art:** shaded vector shapes drawn directly in Skia rather than exported as
