@@ -325,7 +325,7 @@ The false ones are authored per room and the count climbs as the levels do:
 | Rooms | False ways out |
 |---|---|
 | 1–2 | one or two, and not next to the real one |
-| 3–5 | two or three |
+| 3–5 | two or three, and now allowed to share a wall with it |
 | 6+ | four or more, and at least one very convincing |
 
 ### Layout
@@ -413,9 +413,15 @@ Each level is one room crossed entrance-to-exit, with an escape that suits the p
 |---|---|---|---|---|
 | 1 | Backyard BBQ | The side gate | Squirrel | Potato salad, the grill, Uncle's shoes |
 | 2 | Fine restaurant | Kitchen's back door | Kitchen mouse | The cabbage, the cheese cart, the onions, a truffle |
-| 3 | Beach | Boardwalk ramp | Dolphin | Seaweed, low tide, the bait bucket |
-| 4 | Firehouse kitchen | The pole / bay door | The dalmatian | The chili pot, turnout gear, the boots |
-| 5 | School | Gym fire doors | Classroom hamster | The cafeteria, the locker room, a kid named Kevin |
+| 3 | School hallway | Gym fire doors | Classroom hamster | The lockers, the cafeteria, the science lab, a kid named Kevin |
+| 4 | Beach | Boardwalk ramp | Dolphin | Seaweed, low tide, the bait bucket |
+| 5 | Firehouse kitchen | The pole / bay door | The dalmatian | The chili pot, turnout gear, the boots |
+
+> The school moved up from five to three because it is the natural place to
+> teach the false-exit rule: a corridor is already a row of identical doors, so
+> the room explains itself without a tutorial. It is also the first room whose
+> crowd properly moves — the diners in room two barely roamed, which is why
+> careless play scored *better* there than in the backyard.
 
 ### Candidate levels
 

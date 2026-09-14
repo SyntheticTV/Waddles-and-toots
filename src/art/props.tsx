@@ -1014,6 +1014,415 @@ const GenericSolid = () => (
 // -------------------------------------------------------------- the shelf
 
 /** Keyed by prop id, so a level gets its own things drawn as themselves. */
+// ------------------------------------------------------------- the school
+//
+// A hallway is mostly lockers, so the lockers have to carry it: one bank drawing
+// used five times along the walls, and a taller single stack for the one the
+// crowd blames. Everything else in here is a thing a school corridor has and a
+// living room does not — that is the whole job of level three's props.
+
+/** School locker green-blue. Not in the palette because nothing else is a locker. */
+const LOCKER = '#5E8C8A';
+/** A school-issue navy, for bags and machines. `art.shirt` is the crowd's set, not a colour. */
+const SCHOOL_BLUE = '#6E8FB5';
+const LOCKER_TRIM = '#3A5E5E';
+
+/** The vents and the handle, drawn on a door `w` wide starting at `x`. */
+function LockerDoor({ x, w, h, y = 0 }: { x: number; w: number; h: number; y?: number }) {
+  const slot = w * 0.52;
+  return (
+    <Group>
+      <Panel
+        x={x}
+        y={y}
+        w={w}
+        h={h}
+        colors={[lighten(LOCKER, 0.22), darken(LOCKER, 0.18)]}
+        r={1.5}
+        outline={LOCKER_TRIM}
+      />
+      {/* the vent slots at the top, which is the one detail that says "locker" */}
+      {[0, 1, 2].map((i) => (
+        <Rect
+          key={i}
+          x={x + (w - slot) / 2}
+          y={y + h * 0.14 + i * h * 0.1}
+          width={slot}
+          height={Math.max(1, h * 0.045)}
+          color={LOCKER_TRIM}
+          opacity={0.75}
+        />
+      ))}
+      <Circle cx={x + w * 0.78} cy={y + h * 0.56} r={Math.max(1.2, w * 0.07)} color={art.metalDark} />
+    </Group>
+  );
+}
+
+/** A run of lockers against a wall. Wide and shallow — you walk past, not into. */
+const LockerBank = () => (
+  <Group>
+    {/* the sloped top, so it reads as a solid object rather than a painted line */}
+    <Ink d="M 2 4 L 98 4 L 94 12 L 6 12 Z" fill={lighten(LOCKER, 0.3)} outline={LOCKER_TRIM} weight={OUTLINE_FINE} />
+    {[0, 1, 2, 3, 4, 5].map((i) => (
+      <LockerDoor key={i} x={6 + i * 14.8} y={12} w={13.4} h={18} />
+    ))}
+    <Stroke d="M 4 30 L 96 30" color={LOCKER_TRIM} weight={2.5} opacity={0.8} />
+    <Sheen cx={22} cy={14} r={28} strength={0.24} />
+  </Group>
+);
+
+/** The one they blame: a stack of lockers with something living in the bottom. */
+const LockerRow = ({ t }: ArtProps) => (
+  <Group>
+    <Ink d="M 4 6 L 96 6 L 92 14 L 8 14 Z" fill={lighten(LOCKER, 0.3)} outline={LOCKER_TRIM} weight={OUTLINE_FINE} />
+    <LockerDoor x={8} y={14} w={38} h={52} />
+    <LockerDoor x={54} y={14} w={38} h={52} />
+    {/* one of them is not quite shut, which is where it is coming from */}
+    <Ink
+      d="M 54 14 L 74 20 L 74 66 L 54 66 Z"
+      fill={darken(LOCKER, 0.36)}
+      outline={LOCKER_TRIM}
+      weight={OUTLINE_FINE}
+    />
+    <Flat d="M 58 44 L 72 42 L 71 64 L 59 64 Z" fill={art.woodDark} opacity={0.9} />
+    <Whiff x={64} y={16} t={t} />
+    <Whiff x={78} y={12} t={t} phase={1.7} />
+    <Sheen cx={20} cy={18} r={26} strength={0.24} />
+  </Group>
+);
+
+/** A gym bag that has been in there since the start of term. */
+const GymBag = ({ t }: ArtProps) => (
+  <Group>
+    {/* The handles, standing clear of the bag with daylight under them. This is
+        the detail that says "bag": the first attempt tucked them against the
+        body and the whole thing read as a boot. */}
+    <Stroke d="M 34 40 q 4 -20 14 -20 q 10 0 14 20" color={darken(SCHOOL_BLUE, 0.5)} weight={4} />
+    {/* a long, flat-topped cylinder, sagging a little in the middle */}
+    <Form
+      d="M 8 42 q 0 -6 8 -7 q 34 -4 68 0 q 8 1 8 7 l 0 14 q 0 7 -8 8 q -34 4 -68 0 q -8 -1 -8 -8 Z"
+      colors={[lighten(SCHOOL_BLUE, 0.26), SCHOOL_BLUE, darken(SCHOOL_BLUE, 0.34)]}
+      positions={[0, 0.42, 1]}
+      from={[10, 36]}
+      to={[86, 64]}
+      outline="#3B4A66"
+      weight={OUTLINE_FINE}
+    />
+    {/* the squared-off end, which is most of what says "duffel" */}
+    <Ink
+      d="M 78 36 q 10 1 10 7 l 0 14 q 0 7 -10 8 Z"
+      fill={darken(SCHOOL_BLUE, 0.26)}
+      outline="#3B4A66"
+      weight={2}
+    />
+    {/* the zip, straight along the top */}
+    <Stroke d="M 12 43 q 32 -4 64 -1" color={lighten(SCHOOL_BLUE, 0.45)} weight={2.5} opacity={0.85} />
+    {/* a sock, escaping */}
+    <Ink d="M 22 42 q 6 -13 16 -6 q -3 9 -11 10 Z" fill={art.cream} outline="#A89C82" weight={2} />
+    <Whiff x={16} y={34} t={t} />
+    <Whiff x={66} y={30} t={t} phase={1.2} />
+  </Group>
+);
+
+/** The cafeteria: double doors, portholes, and whatever today is. */
+const CafeteriaDoors = ({ t }: ArtProps) => (
+  <Group>
+    <Panel x={4} y={8} w={92} h={60} colors={[darken(art.wood, 0.1), darken(art.wood, 0.42)]} r={2} />
+    <Panel x={8} y={12} w={40} h={54} colors={[lighten(art.metal, 0.22), darken(art.metal, 0.2)]} r={2} />
+    <Panel x={52} y={12} w={40} h={54} colors={[lighten(art.metal, 0.16), darken(art.metal, 0.26)]} r={2} />
+    <Circle cx={28} cy={30} r={11} color={palette.breeze} />
+    <Circle cx={28} cy={30} r={11} color={art.metalDark} style="stroke" strokeWidth={2.5} />
+    <Circle cx={72} cy={30} r={11} color={darken(palette.breeze, 0.12)} />
+    <Circle cx={72} cy={30} r={11} color={art.metalDark} style="stroke" strokeWidth={2.5} />
+    {/* push bars */}
+    <Stroke d="M 12 48 L 44 48" color={art.metalDark} weight={4} />
+    <Stroke d="M 56 48 L 88 48" color={art.metalDark} weight={4} />
+    <Whiff x={34} y={10} t={t} />
+    <Whiff x={64} y={6} t={t} phase={1.5} />
+    <Sheen cx={22} cy={18} r={30} strength={0.22} />
+  </Group>
+);
+
+/** Science: a fume hood going quietly wrong behind glass. */
+const ScienceLab = ({ t }: ArtProps) => (
+  <Group>
+    <Panel x={6} y={10} w={88} h={62} colors={[lighten(art.metal, 0.2), darken(art.metal, 0.3)]} r={3} />
+    <Panel x={12} y={16} w={76} h={38} colors={[palette.breeze, darken(palette.breeze, 0.26)]} r={2} />
+    {/* two flasks, one of which is the problem */}
+    <Ink d="M 28 30 L 34 30 L 34 38 L 42 50 L 20 50 L 28 38 Z" fill={palette.white} outline="#7E8894" weight={2} />
+    <Flat d="M 24 44 L 38 44 L 42 50 L 20 50 Z" fill={palette.stink} opacity={0.85} />
+    <Ink d="M 58 32 L 64 32 L 64 40 L 71 50 L 51 50 L 58 40 Z" fill={palette.white} outline="#7E8894" weight={2} />
+    <Flat d="M 54 45 L 68 45 L 71 50 L 51 50 Z" fill={palette.alarm} opacity={0.7} />
+    <Circle cx={31} cy={40} r={2.6} color={palette.stinkDeep} opacity={0.75} />
+    <Circle cx={34} cy={34} r={1.8} color={palette.stinkDeep} opacity={0.6} />
+    <Stroke d="M 14 58 L 86 58" color={art.metalDark} weight={3} />
+    <Whiff x={30} y={14} t={t} />
+    <Whiff x={62} y={10} t={t} phase={1.9} />
+  </Group>
+);
+
+/** A milk that has been in a desk since September. */
+const MilkCarton = ({ t }: ArtProps) => (
+  <Group>
+    <Form
+      d="M 14 30 L 86 30 L 86 80 L 14 80 Z"
+      colors={[palette.white, palette.paper, darken(palette.paper, 0.26)]}
+      positions={[0, 0.5, 1]}
+      from={[14, 30]}
+      to={[86, 80]}
+      outline="#9A9179"
+      weight={OUTLINE_FINE}
+    />
+    {/* the folded top, opened once and never again */}
+    <Ink d="M 14 30 L 50 6 L 86 30 Z" fill={palette.paper} outline="#9A9179" weight={2} />
+    <Stroke d="M 50 6 L 50 30" color="#9A9179" weight={2} opacity={0.7} />
+    <Flat d="M 24 42 L 76 42 L 76 62 L 24 62 Z" fill={palette.breeze} opacity={0.8} />
+    {/* it has gone a colour */}
+    <Flat d="M 18 66 L 82 66 L 82 78 L 18 78 Z" fill={palette.stink} opacity={0.55} />
+    <Whiff x={72} y={20} t={t} />
+  </Group>
+);
+
+/** The lost and found, which at this point is mostly an ecosystem. */
+const LostAndFound = ({ t }: ArtProps) => (
+  <Group>
+    <Form
+      d="M 10 32 L 90 32 L 84 62 L 16 62 Z"
+      colors={[lighten(art.wood, 0.2), art.wood, darken(art.wood, 0.34)]}
+      positions={[0, 0.5, 1]}
+      from={[12, 32]}
+      to={[86, 62]}
+      outline="#6E4A22"
+      weight={OUTLINE_FINE}
+    />
+    {/* things coming out of it */}
+    <Ink d="M 20 32 q 6 -18 20 -12 q -2 10 -8 12 Z" fill={palette.alarm} outline="#8E3A2E" weight={2} />
+    <Ink d="M 44 32 q 4 -14 18 -10 q 0 8 -8 10 Z" fill={SCHOOL_BLUE} outline="#3B4A66" weight={2} />
+    <Ink d="M 66 32 q 8 -12 18 -4 q -4 6 -10 4 Z" fill={art.cream} outline="#A89C82" weight={2} />
+    <Stroke d="M 14 44 L 86 44" color={darken(art.wood, 0.4)} weight={2} opacity={0.6} />
+    <Whiff x={34} y={14} t={t} />
+    <Whiff x={62} y={10} t={t} phase={1.3} />
+  </Group>
+);
+
+/** Kevin's locker. Everybody knows. */
+const KevinsLocker = ({ t }: ArtProps) => (
+  <Group>
+    <Panel x={10} y={10} w={80} h={124} colors={[darken(LOCKER, 0.1), darken(LOCKER, 0.4)]} r={2} />
+    {/* the door, hanging open, with the contents making a break for it */}
+    <Ink
+      d="M 10 10 L 52 22 L 52 128 L 10 134 Z"
+      fill={darken(LOCKER, 0.45)}
+      outline={LOCKER_TRIM}
+      weight={OUTLINE_FINE}
+    />
+    <Ink
+      d="M 54 40 q 26 -10 34 10 q -6 22 -20 24 q -16 -4 -14 -34 Z"
+      fill={SCHOOL_BLUE}
+      outline="#3B4A66"
+      weight={2}
+    />
+    <Ink d="M 56 92 q 22 -8 30 6 q -8 16 -22 14 q -10 -6 -8 -20 Z" fill={art.cream} outline="#A89C82" weight={2} />
+    {/* a name sticker, peeling */}
+    <Ink d="M 58 20 L 86 24 L 86 34 L 58 30 Z" fill={palette.paper} outline="#9A9179" weight={2} />
+    <Whiff x={62} y={16} t={t} />
+    <Whiff x={78} y={10} t={t} phase={1.1} />
+    <Whiff x={70} y={4} t={t} phase={2.3} />
+  </Group>
+);
+
+/** Backpacks, dumped where they will trip somebody. */
+const BackpackPile = () => (
+  <Group>
+    {/* Each one is a body, a flap over the top of it and a grab loop. The loop
+        is small and does most of the work: without it a backpack is a bean. */}
+    <Stroke d="M 20 24 q 8 -10 16 0" color="#3B4A66" weight={3.5} />
+    <Ink
+      d="M 8 46 q 0 -24 20 -24 q 20 0 20 24 l 0 18 q 0 6 -20 6 q -20 0 -20 -6 Z"
+      fill={SCHOOL_BLUE}
+      outline="#3B4A66"
+      weight={OUTLINE_FINE}
+    />
+    <Ink
+      d="M 8 44 q 0 -22 20 -22 q 20 0 20 22 q -20 9 -40 0 Z"
+      fill={darken(SCHOOL_BLUE, 0.24)}
+      outline="#3B4A66"
+      weight={2}
+    />
+    <Rect x={24} y={48} width={8} height={12} color={darken(SCHOOL_BLUE, 0.38)} />
+    <Stroke d="M 62 30 q 8 -10 16 0" color="#8E3A2E" weight={3.5} />
+    <Ink
+      d="M 50 52 q 0 -24 20 -24 q 20 0 20 24 l 0 14 q 0 6 -20 6 q -20 0 -20 -6 Z"
+      fill={palette.alarm}
+      outline="#8E3A2E"
+      weight={OUTLINE_FINE}
+    />
+    <Ink
+      d="M 50 50 q 0 -22 20 -22 q 20 0 20 22 q -20 9 -40 0 Z"
+      fill={darken(palette.alarm, 0.26)}
+      outline="#8E3A2E"
+      weight={2}
+    />
+    <Rect x={66} y={54} width={8} height={10} color={darken(palette.alarm, 0.4)} />
+    <Sheen cx={22} cy={30} r={22} strength={0.26} />
+  </Group>
+);
+
+/** A fire extinguisher on a bracket, at exactly skunk height. */
+const FireExtinguisher = () => (
+  <Group>
+    <Form
+      d="M 24 44 q 26 -10 52 0 L 76 150 q -26 8 -52 0 Z"
+      colors={[lighten(palette.alarm, 0.22), palette.alarm, darken(palette.alarm, 0.34)]}
+      positions={[0, 0.42, 1]}
+      from={[26, 44]}
+      to={[74, 148]}
+      outline="#7E2A20"
+      weight={OUTLINE_FINE}
+    />
+    <Ink d="M 38 16 L 62 16 L 62 46 L 38 46 Z" fill={art.metalDark} outline="#3E4347" weight={2} />
+    <Ink d="M 30 8 L 78 8 L 78 20 L 30 20 Z" fill={art.metal} outline="#5E6367" weight={2} />
+    <Stroke d="M 26 96 L 74 96" color="#7E2A20" weight={3} opacity={0.7} />
+    <Sheen cx={38} cy={60} r={20} strength={0.3} />
+  </Group>
+);
+
+/** One locker door left swinging into the corridor. */
+const OpenLocker = () => (
+  <Group>
+    {/* The dark inside, on the right. Nearly black, because an open locker is
+        mostly a hole — and a hole is what tells you it is open. */}
+    <Panel x={56} y={10} w={42} h={144} colors={[darken(LOCKER, 0.6), darken(LOCKER, 0.82)]} r={2} />
+    {/* a shelf in there, so the hole has some depth to it */}
+    <Stroke d="M 58 56 L 96 56" color={darken(LOCKER, 0.34)} weight={3.5} />
+    {/* the door, swung right out into the corridor, wider at the bottom */}
+    <Ink
+      d="M 56 10 L 6 26 L 4 146 L 56 154 Z"
+      fill={lighten(LOCKER, 0.3)}
+      outline={LOCKER_TRIM}
+      weight={OUTLINE_FINE}
+    />
+    {[0, 1, 2].map((i) => (
+      <Rect key={i} x={14} y={42 + i * 13} width={32} height={5} color={LOCKER_TRIM} opacity={0.8} />
+    ))}
+    <Circle cx={18} cy={104} r={4.5} color={art.metalDark} />
+    <Sheen cx={26} cy={40} r={30} strength={0.26} />
+  </Group>
+);
+
+/** The trophy case. Nothing in it is from this decade. */
+const TrophyCase = () => (
+  <Group>
+    <Ink d="M 2 2 L 98 2 L 95 10 L 5 10 Z" fill={darken(art.wood, 0.2)} outline="#5A3A1A" weight={OUTLINE_FINE} />
+    <Panel x={4} y={10} w={92} h={16} colors={[palette.breeze, darken(palette.breeze, 0.3)]} r={1} />
+    {[14, 38, 62, 82].map((x, i) => (
+      <Group key={i}>
+        <Ink
+          d={`M ${x} 22 l 5 0 l -1 -6 l 3 -4 l -9 0 l 3 4 Z`}
+          fill={palette.nugget}
+          outline="#9A7A18"
+          weight={1.5}
+        />
+      </Group>
+    ))}
+    <Stroke d="M 4 26 L 96 26" color={darken(art.wood, 0.42)} weight={2.5} />
+    <Sheen cx={20} cy={12} r={24} strength={0.3} />
+  </Group>
+);
+
+/** A cast-iron radiator, painted over about nine times. */
+const Radiator = () => (
+  <Group>
+    <Ink d="M 4 6 L 96 6 L 93 12 L 7 12 Z" fill={lighten(palette.paper, 0.1)} outline="#9A9179" weight={OUTLINE_FINE} />
+    {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+      <Panel
+        key={i}
+        x={6 + i * 11.4}
+        y={12}
+        w={8}
+        h={22}
+        colors={[palette.paper, darken(palette.paper, 0.3)]}
+        r={3}
+        outline="#9A9179"
+      />
+    ))}
+    <Stroke d="M 4 34 L 96 34" color="#9A9179" weight={2.5} opacity={0.8} />
+  </Group>
+);
+
+/** Vending machines, humming. The only light in the hallway that is on. */
+const VendingMachines = () => (
+  <Group>
+    <Panel x={4} y={4} w={44} h={50} colors={[darken(SCHOOL_BLUE, 0.1), darken(SCHOOL_BLUE, 0.45)]} r={2} />
+    <Panel x={52} y={4} w={44} h={50} colors={[darken(palette.alarm, 0.16), darken(palette.alarm, 0.5)]} r={2} />
+    {/* the lit fronts, and the rows of things nobody has bought */}
+    <Panel x={8} y={9} w={30} h={30} colors={[lighten(palette.breeze, 0.3), palette.breeze]} r={1} />
+    <Panel x={56} y={9} w={30} h={30} colors={[lighten(palette.breeze, 0.2), darken(palette.breeze, 0.1)]} r={1} />
+    {[0, 1, 2].map((r) =>
+      [0, 1, 2].map((c) => (
+        <Rect
+          key={`${r}-${c}`}
+          x={11 + c * 9.5}
+          y={12 + r * 9}
+          width={6}
+          height={6}
+          color={[palette.nugget, art.woodDark, art.cream][r]}
+          opacity={0.9}
+        />
+      ))
+    )}
+    {[0, 1, 2].map((r) =>
+      [0, 1, 2].map((c) => (
+        <Rect
+          key={`b-${r}-${c}`}
+          x={59 + c * 9.5}
+          y={12 + r * 9}
+          width={6}
+          height={6}
+          color={[palette.alarm, palette.breeze, palette.nugget][r]}
+          opacity={0.85}
+        />
+      ))
+    )}
+    <Rect x={10} y={42} width={26} height={7} color={palette.ink} opacity={0.55} />
+    <Rect x={58} y={42} width={26} height={7} color={palette.ink} opacity={0.55} />
+    <Sheen cx={18} cy={14} r={26} strength={0.3} />
+  </Group>
+);
+
+/** An air conditioning vent. The other place in the building with air in it. */
+const AcVent = ({ t }: ArtProps) => (
+  <Group>
+    <Panel
+      x={8}
+      y={26}
+      w={84}
+      h={72}
+      colors={[lighten(art.metal, 0.28), darken(art.metal, 0.24)]}
+      r={3}
+      outline="#5E6367"
+    />
+    {[0, 1, 2, 3, 4].map((i) => (
+      <Ink
+        key={i}
+        d={`M 16 ${34 + i * 13} L 84 ${34 + i * 13} L 84 ${41 + i * 13} L 16 ${41 + i * 13} Z`}
+        fill={darken(art.metal, 0.34)}
+        outline="#4E5357"
+        weight={1.5}
+      />
+    ))}
+    {/* the one good breath in this half of the hallway */}
+    <Stroke d="M 22 20 q 14 -12 28 -2 q 12 8 26 -4" color={palette.breeze} weight={4} opacity={0.75} />
+    <Stroke
+      d="M 26 10 q 14 -10 28 0 q 12 8 24 -4"
+      color={palette.breeze}
+      weight={3}
+      opacity={0.5 + 0.25 * Math.sin(t * 2.1)}
+    />
+    <Sheen cx={26} cy={34} r={26} strength={0.26} />
+  </Group>
+);
+
 const BY_ID: Record<string, Entry> = {
   'potato-salad': { w: 100, h: 50, Art: PotatoSalad },
   grill: { w: 100, h: 80, Art: Grill },
@@ -1052,6 +1461,33 @@ const BY_ID: Record<string, Entry> = {
   'shed-door': { w: 100, h: 125, Art: FalseDoor },
   cooler: { w: 100, h: 79, Art: Cooler },
   shed: { w: 100, h: 115, Art: Shed },
+  // --- the school ---
+  // Art is fitted inside its footprint, so each `h` here is that prop's own
+  // bounds turned into the same proportion. Get it wrong and the drawing is
+  // letterboxed into a corner of the space it is supposed to fill.
+  'lockers-a': { w: 100, h: 33, Art: LockerBank },
+  'lockers-b': { w: 100, h: 33, Art: LockerBank },
+  'lockers-c': { w: 100, h: 33, Art: LockerBank },
+  'lockers-d': { w: 100, h: 33, Art: LockerBank },
+  'lockers-e': { w: 100, h: 33, Art: LockerBank },
+  'locker-row': { w: 100, h: 73, Art: LockerRow },
+  'gym-bag': { w: 100, h: 67, Art: GymBag },
+  'cafeteria-doors': { w: 100, h: 69, Art: CafeteriaDoors },
+  'science-lab': { w: 100, h: 75, Art: ScienceLab },
+  'milk-carton': { w: 100, h: 83, Art: MilkCarton },
+  'lost-and-found': { w: 100, h: 64, Art: LostAndFound },
+  'kevins-locker': { w: 100, h: 143, Art: KevinsLocker },
+  'backpack-pile': { w: 100, h: 71, Art: BackpackPile },
+  'fire-extinguisher': { w: 100, h: 171, Art: FireExtinguisher },
+  'open-locker': { w: 100, h: 160, Art: OpenLocker },
+  'trophy-case': { w: 100, h: 29, Art: TrophyCase },
+  radiator: { w: 100, h: 38, Art: Radiator },
+  'vending-machines': { w: 100, h: 58, Art: VendingMachines },
+  'ac-vent': { w: 100, h: 117, Art: AcVent },
+  'stairwell-window': { w: 100, h: 150, Art: FalseWindow },
+  'boys-room': { w: 100, h: 78, Art: FalseDoor },
+  'supply-closet': { w: 100, h: 78, Art: FalseDoor },
+  'stairwell-door': { w: 100, h: 114, Art: FalseDoor },
 };
 
 /** Anything a level hasn't drawn yet still reads as what it does. */

@@ -78,7 +78,7 @@ const TOOT_SCATTER_MS = 500;
  * not a gag. Randomising between the two keeps it a surprise while keeping the
  * rate roughly what it says on the tin.
  */
-const SCREAM_EVERY = [5, 6];
+export const SCREAM_EVERY = [5, 6];
 
 /**
  * The longest a single line may hold the channel.
