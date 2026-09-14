@@ -28,7 +28,8 @@ import * as Speech from 'expo-speech';
 
 import { getSettings } from '../settings';
 import { dealer } from './bag';
-import { duckMusic, playVoiceClip, stopVoiceClips } from './audio';
+import { duckMusic, playSound, playVoiceClip, stopVoiceClips } from './audio';
+import { SCREAM_MS, SCREAMS } from './library';
 import { CAUGHT, DECOY_PAYOFF, NOTICED, PANIC, TOOT_REACTIONS } from './lines';
 import { clipFor } from './voiceClips';
 
@@ -70,6 +71,16 @@ const TOOT_REACTION_MS = 3000;
 const TOOT_SCATTER_MS = 500;
 
 /**
+ * How often somebody skips the commentary and just screams.
+ *
+ * Every fifth or sixth verdict, rather than every fifth: a fixed interval is
+ * something a player works out inside two rooms, and a gag you can see coming is
+ * not a gag. Randomising between the two keeps it a surprise while keeping the
+ * rate roughly what it says on the tin.
+ */
+const SCREAM_EVERY = [5, 6];
+
+/**
  * The longest a single line may hold the channel.
  *
  * Everything here hangs on being told when a line finished, and that news comes
@@ -88,6 +99,7 @@ let lastSpokeAt = 0;
 let rotation = 0;
 let payoffTimer: ReturnType<typeof setTimeout> | null = null;
 let tootTimer: ReturnType<typeof setTimeout> | null = null;
+let screamTimer: ReturnType<typeof setTimeout> | null = null;
 let watchdog: ReturnType<typeof setTimeout> | null = null;
 
 function hash(text: string): number {
@@ -116,6 +128,9 @@ function pick(list: readonly string[]): string {
 
 /** Seventy-odd verdicts on a toot, dealt so every one of them is heard. */
 const dealToot = dealer(TOOT_REACTIONS);
+/** And the screams, so the same one never lands twice running either. */
+const dealScream = dealer(SCREAMS);
+let tootsUntilScream = SCREAM_EVERY[0];
 
 function finished(): void {
   if (watchdog) {
@@ -128,25 +143,37 @@ function finished(): void {
 }
 
 /**
- * Says a line, or decides not to. Everything funnels through here so there is
- * exactly one place that knows about queueing, priority and the switches.
+ * Takes the one voice channel, or decides not to.
+ *
+ * Screams go through here as well as lines, because a scream is somebody in the
+ * room reacting out loud — it is not a sound effect that happens to be a person,
+ * and it must not land on top of a punchline.
  */
-function say(text: string, kind: LineKind, then?: () => void): void {
+function claim(priority: number): boolean {
   const settings = getSettings();
   // Voices sit under the sound switch: turning sound off should make the game
   // quiet, not quiet-except-for-the-talking.
-  if (!settings.sound || !settings.voices) return;
+  if (!settings.sound || !settings.voices) return false;
 
-  const priority = PRIORITY[kind];
   const now = Date.now();
 
   if (speaking) {
     // Only something more urgent gets to cut in.
-    if (priority <= speakingPriority) return;
+    if (priority <= speakingPriority) return false;
     Speech.stop().catch(() => {});
     stopVoiceClips();
   } else if (now - lastSpokeAt < MIN_GAP_MS && priority < PRIORITY.panic) {
-    return;
+    return false;
+  }
+
+  /*
+   * A scream holds the channel on a timer of its own. If something has just cut
+   * in over one, that timer is now counting down to release *this* line's
+   * channel instead — so it goes before the new occupant moves in.
+   */
+  if (screamTimer) {
+    clearTimeout(screamTimer);
+    screamTimer = null;
   }
 
   speaking = true;
@@ -157,6 +184,15 @@ function say(text: string, kind: LineKind, then?: () => void): void {
   // Hand the channel back even if nothing ever tells us the line ended.
   if (watchdog) clearTimeout(watchdog);
   watchdog = setTimeout(finished, LINE_TIMEOUT_MS);
+  return true;
+}
+
+/**
+ * Says a line, or decides not to. Everything funnels through here so there is
+ * exactly one place that knows about queueing, priority and the switches.
+ */
+function say(text: string, kind: LineKind, then?: () => void): void {
+  if (!claim(PRIORITY[kind])) return;
 
   const done = () => {
     finished();
@@ -228,11 +264,35 @@ export function sayDecoy(text: string, tookTheFallHimself: boolean): void {
  */
 export function reactToToot(): void {
   if (tootTimer) return;
-  const line = dealToot();
+
+  /*
+   * Every fifth or sixth reaction, somebody gives up on words. Decided now
+   * rather than when the timer fires, so the line and the scream are drawn from
+   * their bags in the same order they are heard.
+   */
+  const screaming = --tootsUntilScream <= 0;
+  if (screaming) {
+    tootsUntilScream = SCREAM_EVERY[Math.floor(Math.random() * SCREAM_EVERY.length)];
+  }
+  const line = screaming ? null : dealToot();
+  const scream = screaming ? dealScream() : null;
+
   const delay = TOOT_REACTION_MS + Math.random() * TOOT_SCATTER_MS;
   tootTimer = setTimeout(() => {
     tootTimer = null;
-    say(line, 'toot');
+    if (line !== null) {
+      say(line, 'toot');
+      return;
+    }
+    // A scream holds the channel for its own length: nothing knows when a
+    // one-shot finished, and there is no callback to wait on.
+    if (!claim(PRIORITY.toot)) return;
+    playSound(scream as (typeof SCREAMS)[number]);
+    if (screamTimer) clearTimeout(screamTimer);
+    screamTimer = setTimeout(() => {
+      screamTimer = null;
+      finished();
+    }, SCREAM_MS);
   }, delay);
 }
 
@@ -259,6 +319,10 @@ export function hushVoices(): void {
   if (tootTimer) {
     clearTimeout(tootTimer);
     tootTimer = null;
+  }
+  if (screamTimer) {
+    clearTimeout(screamTimer);
+    screamTimer = null;
   }
   Speech.stop().catch(() => {});
   stopVoiceClips();

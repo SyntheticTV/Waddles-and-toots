@@ -671,6 +671,105 @@ sounds['bed-stink'] = () => {
   return seamless(out, 1.0);
 };
 
+// ---------------------------------------------------------------- screams
+
+/**
+ * Somebody who has had enough.
+ *
+ * A scream is the one place a synthesised voice actually works. Nobody holds an
+ * opinion about the exact timbre of a shriek the way they do about a speaking
+ * voice, and a shriek has no words in it — so none of the objections that sank
+ * the synthetic dining crowd apply here.
+ *
+ * What makes it read as a scream rather than a note is the *strain*: a band of
+ * noise riding along above the pitch. Clean tone alone sounds like singing.
+ */
+function shriek({ dur, pitch, formants, rasp = 0.32, amp = 1 }) {
+  const out = vowel({ dur, pitch, formants, amp, wobbleHz: 6.4, wobble: 0.035 });
+  const air = bandpass(noise({ dur, amp: (t) => at(amp, t) }), (t) => at(pitch, t) * 3.2, 2.2);
+  for (let i = 0; i < out.length; i++) out[i] += air[i] * rasp;
+  return out;
+}
+
+/** Fast in, and not quite as fast out. */
+const gate = (dur, attack, release) => (t) =>
+  Math.max(0, Math.min(1, t / attack)) * Math.max(0, Math.min(1, (dur - t) / release));
+
+/** A lady, startled, at some volume. Short — a long scream stops being a joke. */
+sounds['scream-1'] = () => {
+  const dur = 0.6;
+  const out = buf(dur);
+  // Up fast, held, then falling away as she runs out of it.
+  const pitch = (t) => 740 + 280 * Math.min(1, t / 0.06) - 320 * Math.max(0, (t - 0.4) / 0.2);
+  mix(
+    out,
+    shriek({
+      dur,
+      pitch,
+      // "aaah", wide open
+      formants: [[880, 1], [1350, 0.6], [2900, 0.18]],
+      rasp: 0.36,
+      amp: gate(dur, 0.028, 0.14),
+    }),
+    0,
+    1
+  );
+  return out;
+};
+
+/**
+ * The other one: three beats, high-dip-high, in the shape of the stock scream
+ * everybody knows from the films. Ours, not theirs — same joke, own recipe.
+ */
+sounds['scream-2'] = () => {
+  const dur = 0.8;
+  const out = buf(dur);
+  const beats = [
+    // AAAH
+    { at: 0, len: 0.3, from: 430, to: 340, f: [[790, 1], [1180, 0.55], [2600, 0.15]] },
+    // -eee-
+    { at: 0.3, len: 0.17, from: 520, to: 570, f: [[340, 1], [2250, 0.7], [3000, 0.2]] },
+    // AAAH
+    { at: 0.47, len: 0.33, from: 470, to: 300, f: [[760, 1], [1150, 0.5], [2500, 0.14]] },
+  ];
+  for (const b of beats) {
+    mix(
+      out,
+      shriek({
+        dur: b.len,
+        pitch: (t) => b.from + (b.to - b.from) * (t / b.len),
+        formants: b.f,
+        rasp: 0.28,
+        amp: gate(b.len, 0.02, 0.07),
+      }),
+      b.at,
+      1
+    );
+  }
+  return out;
+};
+
+/** A yelp. Barely a scream at all, which is why it is the funny one. */
+sounds['scream-3'] = () => {
+  const dur = 0.34;
+  const out = buf(dur);
+  const pitch = (t) => 880 + 420 * Math.min(1, t / 0.05) - 260 * Math.max(0, (t - 0.16) / 0.18);
+  mix(
+    out,
+    shriek({
+      dur,
+      // "eee", pinched
+      pitch,
+      formants: [[420, 1], [2400, 0.75], [3100, 0.2]],
+      rasp: 0.3,
+      amp: gate(dur, 0.02, 0.1),
+    }),
+    0,
+    1
+  );
+  return out;
+};
+
 // ------------------------------------------------------------------ music
 
 const hz = (midi) => 440 * Math.pow(2, (midi - 69) / 12);
@@ -898,6 +997,9 @@ sounds['ui-tap'] = () => {
 
 /** Beds sit lower than effects so nothing has to fight the gags. */
 const PEAK = {
+  'scream-1': 0.82,
+  'scream-2': 0.82,
+  'scream-3': 0.78,
   'music-jingle': 0.5,
   'ui-tap': 0.5,
   'slide-empty': 0.6,

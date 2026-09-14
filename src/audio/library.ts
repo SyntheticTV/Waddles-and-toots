@@ -47,6 +47,21 @@ export const SOUNDS = {
   'slide-empty': { source: require('../../assets/audio/slide-empty.wav'), gain: 0.55, voices: 1 },
   /** The last nugget is in and the way out just unlocked. */
   'gate-open': { source: require('../../assets/audio/gate-open.wav'), gain: 0.85, voices: 1 },
+  /**
+   * Somebody in the room who has had enough. Fires in place of a spoken verdict
+   * every fifth or sixth toot — see `voices.ts`. Short, because a long scream
+   * stops being a joke.
+   *
+   * Levelled to sit at the same loudness as the *spoken* verdicts it replaces,
+   * not at the loudness a scream would really be. Raw, these measure well above
+   * the poof, which is the loudest thing in the game on purpose; a gag that
+   * makes a six-year-old jump out of their skin is a different gag from the one
+   * we are telling.
+   */
+  'scream-1': { source: require('../../assets/audio/scream-1.wav'), gain: 0.55, voices: 1 },
+  'scream-2': { source: require('../../assets/audio/scream-2.wav'), gain: 0.58, voices: 1 },
+  'scream-3': { source: require('../../assets/audio/scream-3.wav'), gain: 0.55, voices: 1 },
+
   /** Menus. The only sound in the game that isn't a joke. */
   'ui-tap': { source: require('../../assets/audio/ui-tap.wav'), gain: 0.45, voices: 2 },
 
@@ -76,6 +91,12 @@ export type SoundId = keyof typeof SOUNDS;
  * when the room changes.
  */
 export const ROOM_BEDS = ['bed-yard', 'bed-room'] as const satisfies readonly SoundId[];
+
+/** The screams, in the order they were written; the voice layer deals them. */
+export const SCREAMS = ['scream-1', 'scream-2', 'scream-3'] as const satisfies readonly SoundId[];
+
+/** The longest scream, so the voice layer knows when the channel is free again. */
+export const SCREAM_MS = 800;
 
 export const BED_FOR_SCENERY: Record<SceneryKind, (typeof ROOM_BEDS)[number]> = {
   yard: 'bed-yard',

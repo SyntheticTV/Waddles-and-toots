@@ -477,6 +477,12 @@ a sensible route rather than in a corner nobody visits.
    the longest in the game (seventy-odd lines) and it is **dealt from a shuffled
    bag**: every line is heard before any line repeats. A run of toots gets one
    verdict, not a backlog — people react to a smell, not to each emission.
+
+   **Every fifth or sixth verdict, somebody gives up on words and just screams.**
+   Five *or* six, never a fixed five: a rate a player can count is a gag they can
+   see coming. The screams are levelled to sit exactly where the spoken verdicts
+   sit — the joke is that somebody lost their composure, not that the game
+   suddenly got loud.
 4. **Sound carries the joke.** `gurgle gurgle`, the poof, the crowd's slow "ohhhh no".
 5. **Failure is a punchline.** Every loss ends on a gag, not a sad noise.
 6. **Nothing gross is ever shown.** Green clouds, watering eyes, waving hands. That's it.
