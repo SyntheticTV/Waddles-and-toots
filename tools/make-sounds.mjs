@@ -564,107 +564,86 @@ sounds['bed-yard'] = () => {
 };
 
 /**
- * The dining room: a low babble of people eating, cutlery, the odd glass, and
- * the kitchen extractor grumbling away behind it. Loops.
+ * The dining room, after hours quiet: the room itself, a glass set down now and
+ * then, and somebody moving dishes about. Loops.
  *
- * The babble has to stay *unintelligible*. This room is already full of people
- * saying actual punchlines, and a bed with words in it competes with the joke —
- * so every vowel is moving and none of them ever lands, which is what a
- * conversation three tables away actually sounds like.
+ * There is deliberately no chatter in here. Two goes at synthesising a crowd
+ * both came out wrong — a bed made of voices either sounds like a machine
+ * imitating people, or it competes with the actual people in the room, who are
+ * busy delivering the jokes this game is made of. Silence with things happening
+ * in it is a better restaurant than a fake crowd, and it leaves the whole speech
+ * band clear for the punchlines.
+ *
+ * Sixteen seconds, which is long for a loop, because sparse events give the ear
+ * something to memorise and a short cycle would start sounding like a rhythm.
  */
 sounds['bed-room'] = () => {
-  const len = 9.4;
+  const len = 16;
   const out = buf(len);
 
+  // The room itself: the extractor, the fridge, the building. Quiet, and only
+  // here so the gaps between events sound like a room rather than a mute button.
+  mix(out, lowpass(noise({ dur: len, amp: 0.5 }), 190), 0, 0.5);
+  mix(out, bandpass(noise({ dur: len, amp: (t) => 0.5 + 0.2 * Math.sin(TAU * 0.06 * t) }), 300, 1.2), 0, 0.12);
+
   /*
-   * One person talking, too far off to make out a word of it.
-   *
-   * What makes a noise sound like *speech* is almost entirely its envelope —
-   * four or five syllables a second, fast on and slower off, phrased with gaps
-   * — and almost nothing to do with the fine detail, because a room's worth of
-   * reverb has smeared that away long before it reaches you. So this is the
-   * speech band with a syllable envelope cut into it, and no pitch at all.
-   *
-   * Emphatically no *moving* resonances: a swept formant is the sound of a
-   * synthesiser, not a person, and the first attempt at this bed swept them and
-   * came out sounding like an alien.
+   * One plate, cup or bowl meeting a table. A *click*, not a ting: a broadband
+   * tap with a short dull ring behind it. The ring is what says china; keeping
+   * it short is what stops the room turning into a wind chime.
    */
-  const talker = ({ dur, centre, rate, phase }) => {
-    const src = noise({ dur, amp: 1 });
-    const low = bandpass(src, centre, 1.6);
-    const high = bandpass(src, centre * 2.9, 1.1);
-    const body = new Float32Array(low.length);
-    for (let i = 0; i < body.length; i++) {
-      const t = i / SR;
-      // Nobody talks to a metronome, so the pace drifts and the syllables are
-      // not all the same length. Without this the room sounds like a machine
-      // pretending to be a room.
-      const s = t * rate * (1 + 0.2 * Math.sin(TAU * 0.37 * t + phase * 3)) + phase;
-      const k = Math.floor(s);
-      const u = s - k;
-      const h = ((k * 1103515245 + 12345) >>> 0);
-      // Five syllables in seven, so it phrases instead of machine-gunning.
-      const sounded = h % 7 < 5;
-      const duty = 0.5 + 0.4 * (((h >>> 9) % 128) / 128);
-      const syllable = sounded ? Math.sin(Math.PI * Math.min(1, u / duty)) ** 1.7 : 0;
-      // and the whole remark arrives and leaves
-      body[i] = (low[i] + high[i] * 0.45) * syllable * swell(dur, 0.7)(t);
+  const dish = (freq, bright = 0.45) => {
+    const b = buf(0.12);
+    mix(b, bandpass(noise({ dur: 0.06, amp: hit(0.0004, 0.007) }), freq, 4), 0, 1);
+    mix(b, lowpass(noise({ dur: 0.014, amp: hit(0.0002, 0.003) }), 6000), 0, bright);
+    mix(b, tone({ dur: 0.09, freq: freq * 1.42, amp: hit(0.0004, 0.016) }), 0, 0.22);
+    return b;
+  };
+
+  /*
+   * Dishes being *moved*, which is a different sound from a dish being put down:
+   * a short drag as the stack comes off the table, then two or three of them
+   * knocking together as it is carried. Uneven on purpose — a person doing this
+   * is not keeping time.
+   */
+  const dishesMoved = (freq, clacks, spread) => {
+    const b = buf(0.9);
+    // the drag
+    mix(
+      b,
+      bandpass(noise({ dur: 0.2, amp: swell(0.2, 1.8) }), (t) => 1500 + 900 * t, 2.2),
+      0,
+      0.4
+    );
+    let t = 0.1;
+    for (let i = 0; i < clacks; i++) {
+      mix(b, dish(freq * (1 + 0.12 * i), 0.35), t, 0.8 - i * 0.12);
+      t += spread * (0.7 + 0.6 * ((i * 7919) % 11) / 11);
     }
-    return body;
-  };
-
-  // Six of them, at their own pitches of voice and their own pace, overlapping
-  // so the room is never silent and never in unison.
-  const babble = buf(len);
-  const talkers = [
-    { at: 0.0, dur: 2.1, centre: 430, rate: 4.2, phase: 0.0 },
-    { at: 0.9, dur: 1.6, centre: 650, rate: 3.6, phase: 0.4 },
-    { at: 2.3, dur: 2.4, centre: 520, rate: 5.1, phase: 1.3 },
-    { at: 3.6, dur: 1.8, centre: 880, rate: 4.7, phase: 0.8 },
-    { at: 5.1, dur: 2.2, centre: 380, rate: 3.9, phase: 2.1 },
-    { at: 6.4, dur: 1.5, centre: 740, rate: 5.4, phase: 1.7 },
-    { at: 7.6, dur: 1.9, centre: 560, rate: 4.0, phase: 0.2 },
-  ];
-  for (const who of talkers) mix(babble, talker(who), who.at, 0.5);
-  // Muffled, because it is all coming from the other side of the room.
-  mix(out, lowpass(babble, 2400), 0, 1.35);
-
-  // Room tone: the extractor, and the general hum a full room has. Quiet — it
-  // is here to stop the gaps sounding like a vacuum, not to be listened to.
-  mix(out, lowpass(noise({ dur: len, amp: 0.5 }), 200), 0, 0.34);
-
-  /*
-   * Dishes. A plate or a fork is a *click*, not a ting: a broadband tap with a
-   * short dull ring after it. The ring is what says china rather than keyboard,
-   * and it has to stay short or the room turns into a wind chime.
-   */
-  const dish = (freq, bright) => {
-    const b = buf(0.09);
-    mix(b, bandpass(noise({ dur: 0.05, amp: hit(0.0004, 0.006) }), freq, 4), 0, 1);
-    mix(b, lowpass(noise({ dur: 0.012, amp: hit(0.0002, 0.0025) }), 6000), 0, bright);
-    mix(b, tone({ dur: 0.07, freq: freq * 1.42, amp: hit(0.0004, 0.014) }), 0, 0.22);
     return b;
   };
-  const dishes = [
-    [0.37, 2600, 0.5], [0.52, 1750, 0.3], [1.28, 3100, 0.6], [1.41, 2200, 0.35],
-    [2.15, 1900, 0.3], [2.94, 2800, 0.5], [3.08, 3400, 0.55], [3.83, 2050, 0.3],
-    [4.55, 2950, 0.5], [4.67, 2400, 0.4], [5.39, 1680, 0.28], [5.52, 3250, 0.55],
-    [6.21, 2750, 0.45], [7.04, 2150, 0.35], [7.18, 3050, 0.5], [7.92, 1820, 0.3],
-    [8.44, 2900, 0.5], [8.61, 2350, 0.4],
-  ];
-  for (const [t0, f, bright] of dishes) mix(out, dish(f, bright), t0, 0.26);
 
-  // A glass set down, twice in nine seconds. The one bright thing in here.
-  const clink = (freq) => {
-    const b = buf(0.4);
-    mix(b, tone({ dur: 0.35, freq, amp: hit(0.001, 0.09) }), 0, 0.8);
-    mix(b, tone({ dur: 0.22, freq: freq * 2.76, amp: hit(0.001, 0.035) }), 0, 0.25);
+  // A glass set down. The one bright thing in here, and rare enough to be an
+  // event rather than a texture.
+  const glass = (freq) => {
+    const b = buf(0.6);
+    mix(b, tone({ dur: 0.5, freq, amp: hit(0.001, 0.12) }), 0, 0.8);
+    mix(b, tone({ dur: 0.3, freq: freq * 2.76, amp: hit(0.001, 0.04) }), 0, 0.25);
+    mix(b, lowpass(noise({ dur: 0.01, amp: hit(0.0002, 0.002) }), 7000), 0, 0.3);
     return b;
   };
-  mix(out, clink(1760), 2.02, 0.15);
-  mix(out, clink(2090), 6.78, 0.12);
 
-  return seamless(out, 1.2);
+  // Spread unevenly across the sixteen seconds, with one long gap so the room
+  // is allowed to go quiet — that is what makes the next clink land.
+  mix(out, dish(2400), 0.8, 0.5);
+  mix(out, glass(1760), 2.3, 0.42);
+  mix(out, dishesMoved(2050, 3, 0.13), 4.1, 0.5);
+  mix(out, dish(1820, 0.3), 6.6, 0.4);
+  mix(out, glass(2090), 8.2, 0.34);
+  mix(out, dishesMoved(2650, 4, 0.1), 10.4, 0.45);
+  mix(out, dish(2900), 13.1, 0.36);
+  mix(out, dishesMoved(1950, 2, 0.16), 14.3, 0.4);
+
+  return seamless(out, 1.4);
 };
 
 /**
@@ -927,9 +906,9 @@ const PEAK = {
   startle: 0.6,
   'gate-open': 0.8,
   'bed-yard': 0.34,
-  // Chatter peaks on a dish click, not on the talk, so it needs more headroom
-  // than the yard to sit at the same *loudness* as the yard.
-  'bed-room': 0.52,
+  // A near-empty room: nearly all of its energy is in a handful of clicks, so
+  // it is levelled by the events rather than by an average nobody can hear.
+  'bed-room': 0.5,
   'bed-stink': 0.4,
   slide: 0.6,
   sniff: 0.62,

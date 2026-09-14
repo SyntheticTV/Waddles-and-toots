@@ -195,6 +195,20 @@ function collectLines() {
     });
   }
 
+  /*
+   * The toot reactions, which are by far the longest list in the game and the
+   * one most likely to be added to.
+   *
+   * Their ids come from the *text*, not from the position, so writing a new
+   * joke into the middle of the list costs one recording rather than re-casting
+   * and re-recording all seventy. This is the rule the rest of the casting
+   * follows too (see above); it just matters more here than anywhere else.
+   */
+  for (const text of lines.TOOT_REACTIONS) {
+    const id = `toot--${hash(text)}`;
+    out.push({ id, text, role: 'toot', voice: castFor(id) });
+  }
+
   out.push({
     id: 'decoy-cat',
     text: engine.DECOY_CAT_LINE,

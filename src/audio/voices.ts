@@ -27,8 +27,9 @@
 import * as Speech from 'expo-speech';
 
 import { getSettings } from '../settings';
+import { dealer } from './bag';
 import { duckMusic, playVoiceClip, stopVoiceClips } from './audio';
-import { CAUGHT, DECOY_PAYOFF, NOTICED, PANIC } from './lines';
+import { CAUGHT, DECOY_PAYOFF, NOTICED, PANIC, TOOT_REACTIONS } from './lines';
 import { clipFor } from './voiceClips';
 
 /** Louder, later, more urgent: a bigger number talks over a smaller one. */
@@ -38,6 +39,12 @@ const PRIORITY = {
   /** One of the group reacting. Worth hearing over the room's muttering. */
   animal: 3,
   decoy: 3,
+  /**
+   * Somebody's verdict on a toot. Above the muttering because the player pressed
+   * a button and is owed the joke they paid for, below panic because by then the
+   * room has bigger problems.
+   */
+  toot: 3,
   panic: 4,
   caught: 5,
 } as const;
@@ -49,6 +56,18 @@ const MIN_GAP_MS = 900;
 
 /** The beat before the joke lands. §7. */
 const DECOY_PAYOFF_MS = 900;
+
+/**
+ * How long the room takes to notice a toot.
+ *
+ * The delay is the joke. Firing on the frame the poof happens reads as a sound
+ * effect; three seconds later reads as somebody across the room slowly working
+ * out that something is wrong, which is much funnier and is also long enough for
+ * the poof itself to have finished being heard. A little scatter on it stops a
+ * long round sounding metronomic.
+ */
+const TOOT_REACTION_MS = 3000;
+const TOOT_SCATTER_MS = 500;
 
 /**
  * The longest a single line may hold the channel.
@@ -68,6 +87,7 @@ let speakingPriority = 0;
 let lastSpokeAt = 0;
 let rotation = 0;
 let payoffTimer: ReturnType<typeof setTimeout> | null = null;
+let tootTimer: ReturnType<typeof setTimeout> | null = null;
 let watchdog: ReturnType<typeof setTimeout> | null = null;
 
 function hash(text: string): number {
@@ -93,6 +113,9 @@ function pick(list: readonly string[]): string {
   rotation = (rotation + 1) % 9973;
   return list[rotation % list.length];
 }
+
+/** Seventy-odd verdicts on a toot, dealt so every one of them is heard. */
+const dealToot = dealer(TOOT_REACTIONS);
 
 function finished(): void {
   if (watchdog) {
@@ -194,6 +217,25 @@ export function sayDecoy(text: string, tookTheFallHimself: boolean): void {
   });
 }
 
+/**
+ * Somebody notices a toot, a few seconds after the fact.
+ *
+ * Only one reaction is ever in the air: a player holding the button down would
+ * otherwise queue up a dozen of them and the room would still be working
+ * through the backlog two screens later. A run of toots gets one verdict, which
+ * is also how a real room behaves — people react to a smell, not to each
+ * individual emission.
+ */
+export function reactToToot(): void {
+  if (tootTimer) return;
+  const line = dealToot();
+  const delay = TOOT_REACTION_MS + Math.random() * TOOT_SCATTER_MS;
+  tootTimer = setTimeout(() => {
+    tootTimer = null;
+    say(line, 'toot');
+  }, delay);
+}
+
 /** They worked it out. */
 export function sayCaught(): void {
   say(pick(CAUGHT), 'caught');
@@ -213,6 +255,10 @@ export function hushVoices(): void {
   if (payoffTimer) {
     clearTimeout(payoffTimer);
     payoffTimer = null;
+  }
+  if (tootTimer) {
+    clearTimeout(tootTimer);
+    tootTimer = null;
   }
   Speech.stop().catch(() => {});
   stopVoiceClips();

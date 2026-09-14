@@ -22,7 +22,7 @@ import {
 } from '../game/engine';
 import { enterGame, followRun, leaveGame, playSound } from '../audio/audio';
 import { SOUND_FOR_EVENT } from '../audio/library';
-import { sayAnimal, sayBlame, sayCaught, sayDecoy } from '../audio/voices';
+import { reactToToot, sayAnimal, sayBlame, sayCaught, sayDecoy } from '../audio/voices';
 import { DECOY_COOLDOWN_MS, SLIDE_MAX_MS } from '../game/tuning';
 import type { LevelSpec } from '../game/types';
 import { palette } from '../theme/palette';
@@ -241,6 +241,8 @@ function drainEvents(events: GameEvent[]): void {
     if (e.kind === 'caught') sayCaught();
     // The bubble is the echo; the voice is the joke (§14.2).
     if (e.kind === 'local-asleep' && e.text) sayAnimal(e.text);
+    // Somebody works out what they just smelled, a few seconds too late.
+    if (e.kind === 'poof') reactToToot();
 
     switch (e.kind) {
       case 'poof':

@@ -468,6 +468,15 @@ a sensible route rather than in a corner nobody visits.
    says a word.** He is oblivious, and obliviousness is silent. Everyone else can
    react; he cannot, because reacting would mean he had noticed.
 3. **Waddles never acknowledges the smell.** Not once. It is funnier every time.
+3a. **Every toot gets a verdict, three seconds late.** Somewhere in the room, a
+   few seconds after a poof, one voice says what it thinks of what it just
+   smelled — "Whew wee!", "That's a crime against the nostrils", "Nope." The
+   delay is the whole joke: on the frame itself it is a sound effect, three
+   seconds later it is somebody across the room slowly working out that
+   something is wrong. This is the gag the player triggers most, so the list is
+   the longest in the game (seventy-odd lines) and it is **dealt from a shuffled
+   bag**: every line is heard before any line repeats. A run of toots gets one
+   verdict, not a backlog — people react to a smell, not to each emission.
 4. **Sound carries the joke.** `gurgle gurgle`, the poof, the crowd's slow "ohhhh no".
 5. **Failure is a punchline.** Every loss ends on a gag, not a sad noise.
 6. **Nothing gross is ever shown.** Green clouds, watering eyes, waving hands. That's it.
@@ -491,11 +500,18 @@ a sensible route rather than in a corner nobody visits.
   then blaming and then going up all at once, the win fanfare and the losing
   trombone, the latch letting go when the last fish goes in, plus looping beds:
   **one per room** — wind and birds in the yard, babble and cutlery and the
-  extractor in the restaurant — over a low pressure drone the game fades up as
-  the meter climbs so the room feels worse before anybody says anything. Exactly
-  one room bed plays at a time, chosen by the level's scenery, because a
-  restaurant with wind in it is wrong in a way a player hears immediately and
-  cannot name. Sounds are code, like the art, so a gag can be retimed in a line
+  glass and moved dishes over a quiet room tone in the restaurant — under a low
+  pressure drone the game fades up as the meter climbs so the room feels worse
+  before anybody says anything. Exactly one room bed plays at a time, chosen by
+  the level's scenery, because a restaurant with wind in it is wrong in a way a
+  player hears immediately and cannot name.
+
+  **No bed contains voices.** Two attempts at a synthetic dining crowd both came
+  out wrong — a bed made of voices either sounds like a machine imitating people,
+  or it competes with the actual people in the room, who are busy delivering the
+  jokes this game is made of. A quiet room with things happening in it is a
+  better restaurant than a fake crowd, and it leaves the speech band clear for
+  the punchlines. Sounds are code, like the art, so a gag can be retimed in a line
 - **Haptics:** `expo-haptics` — a little buzz on every poof
 - **Save:** `@react-native-async-storage/async-storage`; save on level end, always
 - **Art:** shaded vector shapes drawn directly in Skia rather than exported as
