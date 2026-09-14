@@ -29,6 +29,18 @@ export interface Rect {
  */
 export type SceneryKind = 'yard' | 'indoor';
 
+/**
+ * Which end of the room the way out is at.
+ *
+ * Inferred from where the exit actually sits rather than authored, so a level
+ * cannot say one thing and place another. Rooms one to three all climb; from
+ * room four the group starts in the middle and the way out can be behind them,
+ * which is the whole reason the local is worth finding (§10).
+ */
+export function exitFacesUp(level: LevelSpec): boolean {
+  return level.exit.y + level.exit.height / 2 > level.height / 2;
+}
+
 /** How far along the stink meter the crowd is. See GAME_DESIGN.md §5. */
 export type StinkStage = 'calm' | 'sniff' | 'blame' | 'panic';
 

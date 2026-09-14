@@ -202,8 +202,16 @@ export const FRESH_AIR_RADIUS = 14;
 
 // ------------------------------------------------------------- the local
 
-/** Roughly one room in four has a Snoozalot, and never two in a row. §9. */
-export const SNOOZALOT_CHANCE = 0.25;
+/**
+ * How often the local turns out to be a Snoozalot — and never two rooms running,
+ * which the engine enforces by remembering the last one.
+ *
+ * Was one in four, which in practice meant players finished the game without
+ * ever meeting one: you have to *find* the local before it can nod off, so the
+ * real rate was a quarter of the rooms where you went looking. With the
+ * never-twice rule on top, this lands at roughly one room in three. §9.
+ */
+export const SNOOZALOT_CHANCE = 0.55;
 
 /** How long a local points before a Snoozalot nods off. */
 export const SNOOZE_AFTER_MS = 4200;

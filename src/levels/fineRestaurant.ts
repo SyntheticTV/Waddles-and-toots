@@ -72,7 +72,7 @@ export const fineRestaurant: LevelSpec = {
     {
       id: 'table-four',
       kind: 'blame',
-      bounds: { x: 40, y: 330, width: 26, height: 20 },
+      bounds: { x: 38, y: 348, width: 26, height: 20 },
       blameLine: 'Table four would like a word with the manager. About the air.',
     },
 

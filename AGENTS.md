@@ -192,8 +192,14 @@ positions into shared values — don't move the rules into worklets.
 
 ## House rules for the code
 
-- **Portrait only, locked.** Never add a landscape path. You climb the room:
-  y = 0 is the entrance at the bottom, y = `level.height` is the exit at the top.
+- **Portrait only, locked.** Never add a landscape path. World y still runs from
+  0 at the bottom of the room to `level.height` at the top — but which end you
+  are *heading for* is the level's business, not an assumption. From room four
+  the group starts in the middle and the way out can be at either end, so ask
+  `exitFacesUp(level)` rather than assuming the top. The camera, the gate art and
+  the dog's nose all read it; anything new that cares about "forward" must too.
+  Rooms are still only ever climbed or descended — the width is fixed at
+  `WORLD_WIDTH` and a side exit is not supported yet.
 - **Rooms are authored in world units,** `WORLD_WIDTH` (100) across and as tall as
   the level says, so a room plays the same on a phone and an iPad. Never author a
   level in pixels.

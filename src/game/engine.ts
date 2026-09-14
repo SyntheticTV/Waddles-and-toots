@@ -169,10 +169,31 @@ export interface CreateRunOptions {
   random?: () => number;
 }
 
+/**
+ * Whether the last run's local turned out to be a Snoozalot.
+ *
+ * The one piece of state in here that outlives a run, and it earns its place:
+ * §9 promises "never twice in a row", and without a memory of the last room
+ * that promise cannot be kept. Two narcoleptic locals back to back stops being
+ * a surprise and starts being the rule.
+ */
+let lastWasSnoozalot = false;
+
+/** For tests, which must not inherit whatever the previous one left behind. */
+export function forgetSnoozalotHistory(): void {
+  lastWasSnoozalot = false;
+}
+
 export function createRun(level: LevelSpec, opts: CreateRunOptions = {}): RunState {
   const random = opts.random ?? Math.random;
   const snoozalot =
-    opts.allowSnoozalot === false ? false : (level.local.snoozalot ?? random() < T.SNOOZALOT_CHANCE);
+    opts.allowSnoozalot === false
+      ? false
+      : (level.local.snoozalot ??
+        (!lastWasSnoozalot && random() < T.SNOOZALOT_CHANCE));
+  if (opts.allowSnoozalot !== false && level.local.snoozalot === undefined) {
+    lastWasSnoozalot = snoozalot;
+  }
 
   const start = { ...level.entry };
 

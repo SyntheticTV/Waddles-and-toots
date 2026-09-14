@@ -326,6 +326,7 @@ The false ones are authored per room and the count climbs as the levels do:
 |---|---|
 | 1–2 | one or two, and not next to the real one |
 | 3–5 | two or three, and now allowed to share a wall with it |
+| 4+ | and the group starts in the *middle*, so the way out may be behind them |
 | 6+ | four or more, and at least one very convincing |
 
 ### Layout
@@ -414,8 +415,9 @@ Each level is one room crossed entrance-to-exit, with an escape that suits the p
 | 1 | Backyard BBQ | The side gate | Squirrel | Potato salad, the grill, Uncle's shoes |
 | 2 | Fine restaurant | Kitchen's back door | Kitchen mouse | The cabbage, the cheese cart, the onions, a truffle |
 | 3 | School hallway | Gym fire doors | Classroom hamster | The lockers, the cafeteria, the science lab, a kid named Kevin |
-| 4 | Beach | Boardwalk ramp | Dolphin | Seaweed, low tide, the bait bucket |
-| 5 | Firehouse kitchen | The pole / bay door | The dalmatian | The chili pot, turnout gear, the boots |
+| 4 | Sunrise yoga | The fire door behind the mats | Studio cat | The hot room, the diffuser, the sock basket, Barbara's mat |
+| 5 | Beach | Boardwalk ramp | Dolphin | Seaweed, low tide, the bait bucket |
+| 6 | Firehouse kitchen | The pole / bay door | The dalmatian | The chili pot, turnout gear, the boots |
 
 > The school moved up from five to three because it is the natural place to
 > teach the false-exit rule: a corridor is already a row of identical doors, so
@@ -436,11 +438,37 @@ Each level is one room crossed entrance-to-exit, with an escape that suits the p
 - **Wedding reception** — blame the fish course, and the grandma who says nothing
 - **Laundromat** — the one place where "something smells" is an actual mystery
 
+### Which way is out
+
+Rooms one to three are climbed: in at the bottom, out at the top. **From room
+four the group enters in the middle of the room and the way out can be at either
+end.** Nothing in a level file says which — it is read off where the exit
+actually sits, so a room cannot claim one thing and place another.
+
+This is what finally makes the local worth finding. While every room was climbed,
+"which way out" had one answer and the false doors could only cost you a few
+seconds; now the doors at the far end can be duds *and* the real one behind you,
+and the only things that will tell you are the animal who lives here and the
+dog's nose once the fish are in.
+
+It also changes the shape of a room. The route is a there-and-back, so the path
+is longer than the room is tall, and **where the last fish leaves you standing is
+now a design decision**: weight the fish to the wrong end and the gate unlocks
+with the whole room between the group and the door.
+
+Later rooms will widen and put doors on the sides as well. Not yet — the width is
+still fixed at `WORLD_WIDTH`.
+
 ### Level authoring checklist
 
 Every room needs: an entrance, an exit, **a local**, 3+ blame props, 1–2 fresh-air
 sources, a nugget layout, a crowd density map, at least one prop that bumps Toots,
 and — from room three onward — **false ways out**.
+
+From room four, also: an entrance in the middle, and fresh air at *both* ends.
+The nose is what tells you which way the exit is, the nose only works in clear
+air, and a player stranded at the far end with a fogged nose and no air to clear
+it has no way to learn anything — which is not difficulty, it is a dead end.
 
 Because the meter never falls (§5), a room also has to be *finishable on one tank*:
 the fresh-air sources are the only pauses in the whole run, so they have to sit on

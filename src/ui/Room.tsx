@@ -28,6 +28,7 @@ import {
 } from '@shopify/react-native-skia';
 
 import { readLocal, readNose, type RunState } from '../game/engine';
+import { exitFacesUp } from '../game/types';
 import { hazeOpacity, huntHeat, stageFor } from '../game/stink';
 import {
   CAMERA_LOOK_AHEAD,
@@ -92,9 +93,15 @@ export function Room({ run, width, height }: Props) {
   const viewHeightWorld = height / scale;
   const t = run.elapsed;
 
-  // Keep Waddles low on screen: you are always looking up into the trouble.
+  /*
+   * Keep Waddles away from the edge he is heading for, so the screen is mostly
+   * the trouble ahead rather than the floor behind. Which edge that is depends
+   * on the room: climbing rooms hold him low and look up, and a room whose way
+   * out is at the bottom holds him high and looks down.
+   */
+  const lookAhead = exitFacesUp(run.level) ? CAMERA_LOOK_AHEAD : 1 - CAMERA_LOOK_AHEAD;
   const camera = clamp(
-    run.waddles.y - viewHeightWorld * CAMERA_LOOK_AHEAD,
+    run.waddles.y - viewHeightWorld * lookAhead,
     0,
     Math.max(0, run.level.height - viewHeightWorld)
   );
@@ -177,6 +184,7 @@ export function Room({ run, width, height }: Props) {
           t={t}
           openness={openness.current}
           dimmed={haze > 0.4}
+          facesUp={exitFacesUp(run.level)}
         />
       </Group>
 

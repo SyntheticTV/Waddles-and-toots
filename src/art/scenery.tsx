@@ -317,6 +317,7 @@ export function ExitGate({
   t,
   openness,
   dimmed,
+  facesUp = true,
 }: {
   exit: WorldRect;
   scale: number;
@@ -327,6 +328,17 @@ export function ExitGate({
   openness: number;
   /** True once the haze is thick enough that the gate is fading out. */
   dimmed: boolean;
+  /**
+   * Whether the way out is at the top of the room or the bottom.
+   *
+   * Only four things actually care: which side the daylight spills out of,
+   * where the leaves are hinged, which way they lean, and which way the arrow
+   * points. Everything else — posts, bolt, the wood itself — is the same object
+   * either way, and is deliberately *not* mirrored, because mirroring it would
+   * light it from below and break the one rule that keeps this room looking
+   * like one room.
+   */
+  facesUp?: boolean;
 }) {
   const x = toScreenX(exit.x);
   const w = exit.width * scale;
@@ -334,6 +346,12 @@ export function ExitGate({
   const h = exit.height * scale;
   const pulse = wobble(t, 3.2, 3);
   const open = openness > 0.02;
+  /** Screen y of the edge that faces out of the room, and of the one facing in. */
+  const yOut = facesUp ? yTop : yTop + h;
+  const yIn = facesUp ? yTop + h : yTop;
+  /** Which way is "out", in screen pixels. */
+  const out = facesUp ? -1 : 1;
+  const lane = 12 * scale;
   // Each leaf covers half the gap when shut, and swings back out of it.
   const swing = openness * 1.5;
   const leafW = w / 2;
@@ -341,10 +359,15 @@ export function ExitGate({
   return (
     <Group>
       {/* the lane of daylight past the fence, shaded while the gate is shut */}
-      <Rect x={x - 2 * scale} y={yTop - 12 * scale} width={w + 4 * scale} height={h + 12 * scale}>
+      <Rect
+        x={x - 2 * scale}
+        y={Math.min(yOut + out * lane, yIn)}
+        width={w + 4 * scale}
+        height={h + lane}
+      >
         <LinearGradient
-          start={vec(0, yTop - 12 * scale)}
-          end={vec(0, yTop + h)}
+          start={vec(0, yOut + out * lane)}
+          end={vec(0, yIn)}
           colors={
             open
               ? ['#FFFDF4', palette.paper, darken(palette.paper, 0.06)]
@@ -357,24 +380,39 @@ export function ExitGate({
       {/* sunlight spilling through, once there is a way through */}
       {open ? (
         <Group opacity={Math.min(1, openness)}>
-          <Sheen cx={x + w / 2} cy={yTop} r={w * 1.15} color="#FFF3CE" strength={0.85} />
-          <Sheen cx={x + w / 2} cy={yTop + h * 1.6} r={w * 0.9} color="#FFF0C2" strength={0.45} />
+          <Sheen cx={x + w / 2} cy={yOut} r={w * 1.15} color="#FFF3CE" strength={0.85} />
+          <Sheen
+            cx={x + w / 2}
+            cy={yOut - out * h * 0.6}
+            r={w * 0.9}
+            color="#FFF0C2"
+            strength={0.45}
+          />
         </Group>
       ) : null}
 
       <Rect
         x={x - 2 * scale}
-        y={yTop - 12 * scale}
+        y={Math.min(yOut + out * lane, yIn)}
         width={w + 4 * scale}
-        height={h + 12 * scale}
+        height={h + lane}
         color={darken(art.wood, 0.45)}
         style="stroke"
         strokeWidth={OUTLINE_FINE}
       />
 
-      {/* the two leaves, hinged on the posts */}
-      <GateLeaf x={x} y={yTop + h} w={leafW} h={h} scale={scale} angle={-swing} />
-      <GateLeaf x={x + w} y={yTop + h} w={leafW} h={h} scale={scale} angle={swing} mirrored />
+      {/* the two leaves, hinged on the posts at the edge facing into the room */}
+      <GateLeaf x={x} y={yIn} w={leafW} h={h} scale={scale} angle={-swing} lean={-out} />
+      <GateLeaf
+        x={x + w}
+        y={yIn}
+        w={leafW}
+        h={h}
+        scale={scale}
+        angle={swing}
+        mirrored
+        lean={-out}
+      />
 
       {/* the bolt across them: the whole reason you cannot leave yet */}
       {openness < 0.35 ? (
@@ -427,8 +465,11 @@ export function ExitGate({
           transform={
             [
               { translateX: x + w / 2 },
-              { translateY: yTop + h / 2 + pulse },
+              { translateY: yTop + h / 2 + pulse * -out },
               { scale: (scale / 3) * Math.min(1, openness * 1.4) },
+              // The signpost turns round; it is a symbol, not an object, so it
+              // is the one thing here allowed to mirror.
+              { scaleY: facesUp ? 1 : -1 },
             ] as Transforms3d
           }
           opacity={dimmed ? 0.6 : 1}
@@ -457,8 +498,9 @@ function GateLeaf({
   scale,
   angle,
   mirrored,
+  lean,
 }: {
-  /** The hinge, at the bottom of its post. */
+  /** The hinge, at the edge of the gateway that faces into the room. */
   x: number;
   y: number;
   w: number;
@@ -466,8 +508,19 @@ function GateLeaf({
   scale: number;
   angle: number;
   mirrored?: boolean;
+  /** +1 for a leaf standing up the screen, -1 for one hanging down it. */
+  lean?: number;
 }) {
   const dir = mirrored ? -1 : 1;
+  /*
+   * Which way the leaf stands from its hinge. A gate at the bottom of the room
+   * hangs down the screen instead of up it, and every measurement in here is
+   * taken from the hinge, so one sign turns the whole thing round.
+   */
+  const up = (lean ?? 1) >= 0 ? 1 : -1;
+  /** Gradient ends, always in screen order, so the wood is lit from above. */
+  const gTop = Math.min(0, -h * up);
+  const gBottom = Math.max(0, -h * up);
   return (
     <Group
       transform={
@@ -480,29 +533,37 @@ function GateLeaf({
       }
     >
       <Form
-        d={`M 0 ${-h} L ${w} ${-h} L ${w} 0 L 0 0 Z`}
+        d={`M 0 ${-h * up} L ${w} ${-h * up} L ${w} 0 L 0 0 Z`}
         colors={[lighten(art.wood, 0.2), art.wood, darken(art.wood, 0.3)]}
         positions={[0, 0.5, 1]}
-        from={[0, -h]}
-        to={[w, 0]}
+        from={[0, gTop]}
+        to={[w, gBottom]}
         outline={darken(art.wood, 0.45)}
         weight={2.4}
       />
       {/* two rails and a strap on the hinge side: a gate, not a crate */}
       <Flat
-        d={`M ${1.5 * scale} ${-h * 0.74} L ${w - 1.5 * scale} ${-h * 0.74} L ${w - 1.5 * scale} ${-h * 0.6} L ${1.5 * scale} ${-h * 0.6} Z`}
+        d={`M ${1.5 * scale} ${-h * 0.74 * up} L ${w - 1.5 * scale} ${-h * 0.74 * up} L ${w - 1.5 * scale} ${-h * 0.6 * up} L ${1.5 * scale} ${-h * 0.6 * up} Z`}
         fill={darken(art.wood, 0.3)}
       />
       <Flat
-        d={`M ${1.5 * scale} ${-h * 0.38} L ${w - 1.5 * scale} ${-h * 0.38} L ${w - 1.5 * scale} ${-h * 0.24} L ${1.5 * scale} ${-h * 0.24} Z`}
+        d={`M ${1.5 * scale} ${-h * 0.38 * up} L ${w - 1.5 * scale} ${-h * 0.38 * up} L ${w - 1.5 * scale} ${-h * 0.24 * up} L ${1.5 * scale} ${-h * 0.24 * up} Z`}
         fill={darken(art.wood, 0.3)}
       />
       {[0.3, 0.55, 0.8].map((f) => (
-        <Rect key={f} x={w * f} y={-h} width={Math.max(1, 0.5 * scale)} height={h} color={darken(art.wood, 0.34)} opacity={0.7} />
+        <Rect
+          key={f}
+          x={w * f}
+          y={gTop}
+          width={Math.max(1, 0.5 * scale)}
+          height={h}
+          color={darken(art.wood, 0.34)}
+          opacity={0.7}
+        />
       ))}
       <Panel
         x={0.6 * scale}
-        y={-h * 0.82}
+        y={up > 0 ? -h * 0.82 : h * 0.16}
         w={Math.max(3, 2.2 * scale)}
         h={h * 0.66}
         colors={[lighten(art.metalDark, 0.35), darken(art.metalDark, 0.15)]}

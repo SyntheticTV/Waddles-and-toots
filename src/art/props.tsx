@@ -1423,6 +1423,333 @@ const AcVent = ({ t }: ArtProps) => (
   </Group>
 );
 
+// --------------------------------------------------------------- the studio
+//
+// A yoga room is mostly floor, so the mats have to do the work of telling you
+// where you can and cannot walk. They are drawn rolled *out* — a flat rectangle
+// with rounded ends and a strip of grip down the middle — because a rolled-up
+// mat reads as a log at this size and a room full of logs is a woodpile.
+
+const MAT = '#7E8FC4';
+const MAT_WARM = '#C98FA8';
+
+/** A mat, rolled out and waiting for somebody to breathe deeply on it. */
+const YogaMat = () => (
+  <Group>
+    <Panel
+      x={3}
+      y={8}
+      w={94}
+      h={52}
+      colors={[lighten(MAT, 0.26), darken(MAT, 0.24)]}
+      r={9}
+      outline="#4A5580"
+    />
+    {/* the grip pattern, which is the only thing that says "mat" and not "rug" */}
+    {[0, 1, 2, 3, 4, 5].map((i) => (
+      <Rect
+        key={i}
+        x={12 + i * 13.5}
+        y={20}
+        width={7}
+        height={28}
+        color={darken(MAT, 0.16)}
+        opacity={0.55}
+      />
+    ))}
+    <Sheen cx={22} cy={18} r={26} strength={0.24} />
+  </Group>
+);
+
+/** Barbara's mat. Barbara always brings her own mat. */
+const BarbarasMat = ({ t }: ArtProps) => (
+  <Group>
+    <Panel
+      x={3}
+      y={10}
+      w={94}
+      h={44}
+      colors={[lighten(MAT_WARM, 0.24), darken(MAT_WARM, 0.3)]}
+      r={8}
+      outline="#8A5266"
+    />
+    {[0, 1, 2, 3, 4].map((i) => (
+      <Rect key={i} x={14 + i * 15} y={20} width={8} height={24} color={darken(MAT_WARM, 0.2)} opacity={0.5} />
+    ))}
+    {/* a name written on it in marker, because of course there is */}
+    <Stroke d="M 20 50 l 5 -10 l 5 10 M 22 46 l 6 0" color="#7A4254" weight={2.5} opacity={0.8} />
+    <Whiff x={46} y={10} t={t} />
+    <Whiff x={68} y={6} t={t} phase={1.4} />
+  </Group>
+);
+
+/** The hot yoga room. Nobody has opened that door since Tuesday. */
+const HotYogaDoor = ({ t }: ArtProps) => (
+  <Group>
+    <Panel x={4} y={8} w={92} h={60} colors={[darken(art.wood, 0.12), darken(art.wood, 0.44)]} r={2} />
+    <Panel x={10} y={13} w={80} h={50} colors={[darken(palette.alarm, 0.24), darken(palette.alarm, 0.52)]} r={2} />
+    {/* the little window, fogged right over */}
+    <Panel x={30} y={20} w={40} h={20} colors={[lighten(palette.paper, 0.05), darken(palette.paper, 0.18)]} r={2} />
+    <Stroke d="M 34 30 q 8 -5 16 0 q 8 5 16 0" color={palette.white} weight={3} opacity={0.75} />
+    <Stroke d="M 34 36 q 8 -5 16 0 q 8 5 16 0" color={palette.white} weight={2.5} opacity={0.5} />
+    <Stroke d="M 16 52 L 84 52" color={art.metalDark} weight={4} />
+    <Whiff x={30} y={8} t={t} />
+    <Whiff x={62} y={4} t={t} phase={1.6} />
+    <Sheen cx={20} cy={16} r={26} strength={0.2} />
+  </Group>
+);
+
+/** The diffuser, doing its absolute best. */
+const Diffuser = ({ t }: ArtProps) => (
+  <Group>
+    {/* A wide ceramic base with a proper opening in the top. The first attempt
+        was a rounded blob with a stem on it and read, unmistakably, as an
+        apple. */}
+    <Form
+      d="M 16 62 q 34 -10 68 0 q 4 18 -8 28 q -26 6 -52 0 q -12 -10 -8 -28 Z"
+      colors={[palette.white, lighten(palette.breeze, 0.18), darken(palette.breeze, 0.3)]}
+      positions={[0, 0.4, 1]}
+      from={[18, 58]}
+      to={[82, 92]}
+      outline="#7E8894"
+      weight={OUTLINE_FINE}
+    />
+    {/* the neck, and the hole the mist comes out of */}
+    <Ink d="M 34 48 L 66 48 L 62 64 L 38 64 Z" fill={lighten(palette.breeze, 0.3)} outline="#7E8894" weight={2} />
+    <Ink d="M 38 44 q 12 -5 24 0 q -12 5 -24 0 Z" fill={darken(palette.breeze, 0.35)} outline="#7E8894" weight={2} />
+    {/* its one hopeful puff of mist */}
+    <Stroke d="M 44 40 q -10 -12 0 -20" color={palette.white} weight={5} opacity={0.8} />
+    <Stroke d="M 56 40 q 10 -14 2 -24" color={palette.white} weight={4} opacity={0.6} />
+    {/* and what it is up against */}
+    <Whiff x={22} y={40} t={t} />
+    <Whiff x={78} y={34} t={t} phase={1.9} />
+    <Sheen cx={32} cy={68} r={20} strength={0.3} />
+  </Group>
+);
+
+/** A stack of mats that has reached enlightenment. */
+const MatPile = ({ t }: ArtProps) => (
+  <Group>
+    {[0, 1, 2, 3].map((i) => (
+      <Panel
+        key={i}
+        x={8 + i * 2}
+        y={26 + i * 9}
+        w={84 - i * 4}
+        h={9}
+        colors={[lighten(i % 2 ? MAT_WARM : MAT, 0.2), darken(i % 2 ? MAT_WARM : MAT, 0.3)]}
+        r={4}
+        outline={i % 2 ? '#8A5266' : '#4A5580'}
+      />
+    ))}
+    <Whiff x={30} y={24} t={t} />
+    <Whiff x={62} y={20} t={t} phase={1.2} />
+    <Sheen cx={24} cy={30} r={22} strength={0.22} />
+  </Group>
+);
+
+/** Kombucha. At a yoga class. */
+const Kombucha = ({ t }: ArtProps) => (
+  <Group>
+    <Form
+      d="M 30 42 q 20 -6 40 0 l 0 62 q -20 6 -40 0 Z"
+      colors={[lighten(palette.breeze, 0.2), '#B79A5E', '#8A6E38']}
+      positions={[0, 0.45, 1]}
+      from={[30, 42]}
+      to={[70, 104]}
+      outline="#5F4A20"
+      weight={OUTLINE_FINE}
+    />
+    {/* the neck and the cap */}
+    <Ink d="M 42 18 L 58 18 L 58 44 L 42 44 Z" fill="#9A7C44" outline="#5F4A20" weight={2} />
+    <Ink d="M 38 10 L 62 10 L 62 20 L 38 20 Z" fill={palette.alarm} outline="#8E3A2E" weight={2} />
+    {/* the culture, floating about in there, which is the actual joke */}
+    <Ink d="M 38 62 q 12 -8 24 0 q -2 8 -12 8 q -10 0 -12 -8 Z" fill="#C9B489" outline="#7A6334" weight={2} />
+    <Circle cx={46} cy={84} r={3} color="#D8C79E" opacity={0.8} />
+    <Circle cx={58} cy={92} r={2.2} color="#D8C79E" opacity={0.7} />
+    <Whiff x={70} y={20} t={t} />
+  </Group>
+);
+
+/** The sock basket. We do not talk about the sock basket. */
+const SockBasket = ({ t }: ArtProps) => (
+  <Group>
+    <Form
+      d="M 10 32 L 90 32 L 84 66 L 16 66 Z"
+      colors={[lighten(art.wood, 0.24), art.wood, darken(art.wood, 0.36)]}
+      positions={[0, 0.5, 1]}
+      from={[12, 32]}
+      to={[86, 66]}
+      outline="#6E4A22"
+      weight={OUTLINE_FINE}
+    />
+    {/* the weave */}
+    {[0, 1, 2].map((i) => (
+      <Stroke key={i} d={`M ${13 + i} ${40 + i * 9} L ${87 - i} ${40 + i * 9}`} color={darken(art.wood, 0.38)} weight={2} opacity={0.55} />
+    ))}
+    {/* socks, several of which have given up */}
+    <Ink d="M 22 32 q 2 -16 14 -14 q 4 10 -2 14 Z" fill={art.cream} outline="#A89C82" weight={2} />
+    <Ink d="M 44 32 q 0 -18 14 -14 q 2 10 -4 14 Z" fill={palette.white} outline="#A89C82" weight={2} />
+    <Ink d="M 64 32 q 6 -14 18 -8 q -2 8 -8 8 Z" fill={darken(art.cream, 0.18)} outline="#A89C82" weight={2} />
+    <Whiff x={34} y={16} t={t} />
+    <Whiff x={58} y={10} t={t} phase={1.5} />
+    <Whiff x={74} y={14} t={t} phase={2.4} />
+  </Group>
+);
+
+/** The incense, losing. */
+const Incense = ({ t }: ArtProps) => (
+  <Group>
+    <Ink d="M 30 104 q 20 -8 40 0 q -20 12 -40 0 Z" fill={art.woodDark} outline="#5A3A1A" weight={OUTLINE_FINE} />
+    <Stroke d="M 50 104 L 46 34" color="#6E5230" weight={3.5} />
+    <Circle cx={46} cy={32} r={3} color={palette.alarm} />
+    {/* its one thin ribbon of smoke, against everything else in the room */}
+    <Stroke
+      d="M 46 28 q -10 -10 -2 -16 q 8 -6 0 -12"
+      color={palette.inkSoft}
+      weight={2.5}
+      opacity={0.45 + 0.2 * Math.sin(t * 1.7)}
+    />
+    <Whiff x={68} y={60} t={t} />
+    <Whiff x={24} y={54} t={t} phase={1.8} />
+  </Group>
+);
+
+/** The herbal tea. It has notes of pond. */
+const TeaUrn = ({ t }: ArtProps) => (
+  <Group>
+    <Form
+      d="M 22 26 L 78 26 L 74 74 L 26 74 Z"
+      colors={[lighten(art.metal, 0.3), art.metal, darken(art.metal, 0.34)]}
+      positions={[0, 0.4, 1]}
+      from={[24, 26]}
+      to={[76, 74]}
+      outline="#5E6367"
+      weight={OUTLINE_FINE}
+    />
+    <Ink d="M 18 18 L 82 18 L 82 28 L 18 28 Z" fill={art.metalDark} outline="#3E4347" weight={2} />
+    {/* the tap, and what is coming out of it */}
+    <Ink d="M 74 48 L 88 48 L 88 56 L 74 56 Z" fill={art.metalDark} outline="#3E4347" weight={2} />
+    <Stroke d="M 86 56 L 86 68" color={palette.stink} weight={3} opacity={0.8} />
+    <Ink d="M 30 76 q 20 -6 40 0 q -20 8 -40 0 Z" fill={darken(art.metal, 0.4)} outline="#3E4347" weight={2} />
+    <Whiff x={40} y={16} t={t} />
+    <Whiff x={64} y={12} t={t} phase={1.3} />
+    <Sheen cx={34} cy={34} r={22} strength={0.3} />
+  </Group>
+);
+
+/** Foam blocks, stacked by somebody who cared. */
+const BlockStack = () => (
+  <Group>
+    <Panel x={10} y={44} w={78} h={20} colors={[lighten(palette.breeze, 0.2), darken(palette.breeze, 0.28)]} r={3} />
+    <Panel x={16} y={26} w={66} h={20} colors={[lighten(MAT_WARM, 0.22), darken(MAT_WARM, 0.3)]} r={3} />
+    <Panel x={22} y={10} w={54} h={18} colors={[lighten(palette.nugget, 0.24), darken(palette.nugget, 0.3)]} r={3} />
+    <Sheen cx={28} cy={18} r={22} strength={0.3} />
+  </Group>
+);
+
+/** Everybody's water bottle, in a row, waiting to be knocked over. */
+const WaterBottles = () => (
+  <Group>
+    {[
+      [14, palette.breeze],
+      [42, MAT_WARM],
+      [70, palette.stink],
+    ].map(([x, c], i) => (
+      <Group key={i}>
+        <Form
+          d={`M ${x} 44 q 8 -4 16 0 l 0 60 q -8 4 -16 0 Z`}
+          colors={[palette.white, c as string, darken(c as string, 0.3)]}
+          positions={[0, 0.45, 1]}
+          from={[Number(x), 44]}
+          to={[Number(x) + 16, 104]}
+          outline="#6E7A80"
+          weight={2}
+        />
+        <Ink
+          d={`M ${Number(x) + 4} 30 L ${Number(x) + 12} 30 L ${Number(x) + 12} 46 L ${Number(x) + 4} 46 Z`}
+          fill={art.metalDark}
+          outline="#3E4347"
+          weight={1.8}
+        />
+      </Group>
+    ))}
+    <Sheen cx={22} cy={52} r={22} strength={0.28} />
+  </Group>
+);
+
+/** A singing bowl, which is about to sing whether anybody wanted it to or not. */
+const SingingBowl = () => (
+  <Group>
+    <Form
+      d="M 16 30 q 34 -10 68 0 q -4 42 -34 44 q -30 -2 -34 -44 Z"
+      colors={[lighten(palette.nugget, 0.35), '#C89A3C', '#8A6A1E']}
+      positions={[0, 0.45, 1]}
+      from={[18, 28]}
+      to={[80, 72]}
+      outline="#6A5216"
+      weight={OUTLINE_FINE}
+    />
+    <Stroke d="M 24 36 q 26 8 52 0" color="#E0BE6A" weight={3} opacity={0.7} />
+    <Ink d="M 76 12 q 8 2 6 10 l -4 22 q -6 2 -6 -4 Z" fill={art.woodDark} outline="#5A3A1A" weight={2} />
+    <Sheen cx={34} cy={36} r={22} strength={0.35} />
+  </Group>
+);
+
+/** A wobble board. The clue is in the name. */
+const WobbleBoard = ({ t }: ArtProps) => (
+  <Group transform={[{ translateX: 50 }, { translateY: 50 }, { rotate: 0.08 * Math.sin(t * 1.4) }, { translateX: -50 }, { translateY: -50 }] as Transforms3d}>
+    <Ink d="M 44 56 q 6 -6 12 0 q 2 14 -6 16 q -8 -2 -6 -16 Z" fill={art.woodDark} outline="#5A3A1A" weight={2} />
+    <Form
+      d="M 8 44 q 42 -16 84 0 q -42 16 -84 0 Z"
+      colors={[lighten(art.wood, 0.24), art.wood, darken(art.wood, 0.3)]}
+      positions={[0, 0.5, 1]}
+      from={[10, 36]}
+      to={[86, 54]}
+      outline="#6E4A22"
+      weight={OUTLINE_FINE}
+    />
+    <Stroke d="M 18 44 q 32 8 64 0" color={darken(art.wood, 0.34)} weight={2} opacity={0.6} />
+  </Group>
+);
+
+/** Bolsters, which are just very firm pillows with a job title. */
+const BolsterPile = () => (
+  <Group>
+    <Form
+      d="M 8 48 q 42 -10 84 0 q 2 14 -6 20 q -36 8 -72 0 q -8 -6 -6 -20 Z"
+      colors={[lighten(MAT_WARM, 0.2), MAT_WARM, darken(MAT_WARM, 0.32)]}
+      positions={[0, 0.45, 1]}
+      from={[10, 44]}
+      to={[86, 68]}
+      outline="#8A5266"
+      weight={OUTLINE_FINE}
+    />
+    <Form
+      d="M 16 28 q 34 -10 68 0 q 2 12 -5 17 q -29 7 -58 0 q -7 -5 -5 -17 Z"
+      colors={[lighten(MAT, 0.22), MAT, darken(MAT, 0.3)]}
+      positions={[0, 0.45, 1]}
+      from={[18, 24]}
+      to={[80, 45]}
+      outline="#4A5580"
+      weight={OUTLINE_FINE}
+    />
+    <Stroke d="M 20 36 q 30 6 60 0" color={darken(MAT, 0.34)} weight={2} opacity={0.5} />
+    <Sheen cx={28} cy={32} r={24} strength={0.26} />
+  </Group>
+);
+
+/** The mirror wall. Twelve people watching themselves not enjoy this. */
+const MirrorWall = () => (
+  <Group>
+    <Panel x={6} y={4} w={88} h={310} colors={[lighten(palette.breeze, 0.4), darken(palette.breeze, 0.1)]} r={2} outline="#7E8894" />
+    {/* a couple of long highlights, which is all a mirror needs to read as one */}
+    <Stroke d="M 22 20 L 74 150" color={palette.white} weight={7} opacity={0.55} />
+    <Stroke d="M 18 150 L 62 260" color={palette.white} weight={5} opacity={0.4} />
+    <Rect x={6} y={4} width={88} height={310} color="#6E7A80" style="stroke" strokeWidth={OUTLINE_FINE} />
+  </Group>
+);
+
 const BY_ID: Record<string, Entry> = {
   'potato-salad': { w: 100, h: 50, Art: PotatoSalad },
   grill: { w: 100, h: 80, Art: Grill },
@@ -1488,6 +1815,38 @@ const BY_ID: Record<string, Entry> = {
   'boys-room': { w: 100, h: 78, Art: FalseDoor },
   'supply-closet': { w: 100, h: 78, Art: FalseDoor },
   'stairwell-door': { w: 100, h: 114, Art: FalseDoor },
+  // --- the yoga studio ---
+  'mat-1-1': { w: 100, h: 67, Art: YogaMat },
+  'mat-1-2': { w: 100, h: 67, Art: YogaMat },
+  'mat-1-3': { w: 100, h: 67, Art: YogaMat },
+  'mat-2-1': { w: 100, h: 67, Art: YogaMat },
+  'mat-2-2': { w: 100, h: 67, Art: YogaMat },
+  'mat-2-3': { w: 100, h: 67, Art: YogaMat },
+  'mat-3-1': { w: 100, h: 67, Art: YogaMat },
+  'mat-3-2': { w: 100, h: 67, Art: YogaMat },
+  'mat-3-3': { w: 100, h: 67, Art: YogaMat },
+  'mat-4-1': { w: 100, h: 67, Art: YogaMat },
+  'mat-4-2': { w: 100, h: 67, Art: YogaMat },
+  'mat-4-3': { w: 100, h: 67, Art: YogaMat },
+  'barbaras-mat': { w: 100, h: 60, Art: BarbarasMat },
+  'hot-yoga-door': { w: 100, h: 75, Art: HotYogaDoor },
+  diffuser: { w: 100, h: 100, Art: Diffuser },
+  'mat-pile': { w: 100, h: 64, Art: MatPile },
+  kombucha: { w: 100, h: 117, Art: Kombucha },
+  'sock-basket': { w: 100, h: 70, Art: SockBasket },
+  incense: { w: 100, h: 133, Art: Incense },
+  'tea-urn': { w: 100, h: 88, Art: TeaUrn },
+  'block-stack': { w: 100, h: 91, Art: BlockStack },
+  'water-bottles': { w: 100, h: 120, Art: WaterBottles },
+  'singing-bowl': { w: 100, h: 80, Art: SingingBowl },
+  'wobble-board': { w: 100, h: 75, Art: WobbleBoard },
+  'bolster-pile': { w: 100, h: 83, Art: BolsterPile },
+  'mirror-wall': { w: 100, h: 325, Art: MirrorWall },
+  'studio-window': { w: 100, h: 150, Art: FalseWindow },
+  'fire-vent': { w: 100, h: 133, Art: AcVent },
+  'front-desk-door': { w: 100, h: 78, Art: FalseDoor },
+  'changing-room': { w: 100, h: 78, Art: FalseDoor },
+  'prop-cupboard': { w: 100, h: 78, Art: FalseDoor },
 };
 
 /** Anything a level hasn't drawn yet still reads as what it does. */

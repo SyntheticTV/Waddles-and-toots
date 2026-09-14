@@ -113,6 +113,13 @@ const CAST_BY_ID = {
   'fine-restaurant--table-four': 'Pulcherrima',
   'fine-restaurant--truffle-plate': 'Rasalgethi',
 
+  /*
+   * Room four. The incense and the tea urn both drew Alnilam — two people
+   * standing a few feet apart in the same voice — so the tea is pinned
+   * elsewhere. This is the table doing its job, not a bug.
+   */
+  'sunrise-yoga--tea-urn': 'Laomedeia',
+
   'decoy-1': 'Iapetus',
   'decoy-2': 'Iapetus',
   'decoy-cat': 'Iapetus',
