@@ -201,6 +201,30 @@ the truth, so the pressure always comes back.
   Because the direction is expressed by his head rather than by a graphic, a
   failing nose *looks* like a failing nose: it is his head that wanders, so the
   player watches the dog rather than reading a gauge.
+- **He also shows how much of it is a guess**, because a wandering head alone is
+  not enough. The trouble with stages 1–3 is that he looks exactly as certain as
+  he does at stage 0 while being wrong by up to 170°, so the player is not merely
+  uninformed, they are being *misled* — and at stink 50, where he can already be
+  115° out, nothing on screen says so.
+
+  So a **question mark** appears over him, and it fades in with the error rather
+  than switching on at a threshold: nothing while he is reliable, faint as he
+  starts to guess, solid by the time he has given up. That grading is the point.
+  A light that only comes on at the end would leave the whole middle of a round —
+  the part where a player is actually misled — unmarked.
+
+  Once he has given up entirely he **shakes his head**, three swings and a pause,
+  riding on the same face-slide that does the pointing: the motion the player has
+  already learnt to read, now going side to side instead of settling somewhere.
+  And he **whines** — the exact counterpart of the "ruff ruff" he gives for fresh
+  air (§8), so the two halves of the message, *I know the way* and *I have lost
+  it*, are recognisable as a pair without anybody being told.
+
+  Three channels on purpose, because they answer different questions. The whine
+  is an *event* — it tells a player who is looking somewhere else. The head shake
+  is a *behaviour* — it reads as "no" without needing to be literate. The question
+  mark is the *state* — it is still there thirty seconds later when somebody
+  finally glances at the dog, which neither of the other two can do.
 - **Fresh air resets him, while he is standing in it.** Open windows, ocean
   breezes, vents, an open freezer case. His nose clears the moment he is in it and
   clouds again the moment he leaves, so fresh air is somewhere you *go* to get a

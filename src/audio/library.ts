@@ -39,6 +39,14 @@ export const SOUNDS = {
    * read, this is the navigation system. §8.
    */
   bark: { source: require('../../assets/audio/bark.wav'), gain: 0.85, voices: 1 },
+  /**
+   * The opposite of the bark: his nose has gone and he knows it. §8.
+   *
+   * Gain is set so it lands just *under* the bark in the mix rather than
+   * matching it — the bark is news and this is a mood, and it fires at the point
+   * in a round where the room is already loud.
+   */
+  whine: { source: require('../../assets/audio/whine.wav'), gain: 0.3, voices: 1 },
   /** The tell: the local yawning before it goes under. §9. */
   yawn: { source: require('../../assets/audio/yawn.wav'), gain: 0.6, voices: 1 },
   /** Woken by a bump or a poof going off next to it. */

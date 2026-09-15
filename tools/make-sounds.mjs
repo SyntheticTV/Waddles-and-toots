@@ -671,6 +671,45 @@ sounds['bed-stink'] = () => {
   return seamless(out, 1.0);
 };
 
+/**
+ * The whine. His nose has gone and he knows it.
+ *
+ * Deliberately the shape of the bark inverted: the bark is two short bursts
+ * going *up*, and this is one long note sliding *down*. They are the two halves
+ * of the same message — "I know the way" and "I have lost it" — so they should
+ * be recognisable as a pair without anybody being told.
+ */
+sounds['whine'] = () => {
+  const out = buf(0.9);
+  const whimper = (t0, dur, from, to, amp) => {
+    const glide = (u) => from + (to - from) * Math.pow(Math.min(1, u / dur), 0.7);
+    mix(
+      out,
+      vowel({
+        dur,
+        pitch: glide,
+        // Nasal: a high first formant close to a strong second one is what makes
+        // a voiced note sound pinched rather than sung.
+        formants: [
+          [(u) => glide(u) * 2.6, 1],
+          [(u) => glide(u) * 4.4, 0.6],
+          [2600, 0.12],
+        ],
+        amp: (u) => amp * Math.sin(Math.PI * Math.min(1, u / dur)) ** 0.8,
+        wobbleHz: 7.2,
+        wobble: 0.045,
+      }),
+      t0,
+      1
+    );
+  };
+  whimper(0, 0.46, 520, 330, 0.85);
+  whimper(0.44, 0.42, 460, 290, 0.6);
+  // a bit of breath through the nose, which is the part that is not working
+  mix(out, bandpass(noise({ dur: 0.86, amp: swell(0.86, 1.2) }), 1500, 2.4), 0.02, 0.12);
+  return out;
+};
+
 // ---------------------------------------------------------------- screams
 
 /**
@@ -1004,6 +1043,8 @@ const PEAK = {
   'ui-tap': 0.5,
   'slide-empty': 0.6,
   bark: 0.8,
+  // Quieter than the bark: the bark is news, the whine is a mood.
+  whine: 0.6,
   yawn: 0.55,
   startle: 0.6,
   'gate-open': 0.8,

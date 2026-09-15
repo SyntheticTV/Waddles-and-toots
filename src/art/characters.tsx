@@ -626,6 +626,8 @@ const S_NOSE =
 const S_FOOT_L = 'M -15 -5 C -22 -5 -25 0 -18 2 L -6 2 L -6 -5 Z';
 const S_FOOT_R = 'M 15 -5 C 22 -5 25 0 18 2 L 6 2 L 6 -5 Z';
 const S_TAIL = 'M 24 -28 C 42 -34 49 -54 41 -68';
+/** The hook of a question mark, over his head when the nose is going. */
+const S_QUERY = 'M -5 -113 C -5 -121 9 -122 9 -114 C 9 -108 2 -108 2 -104';
 
 /*
  * The same head seen from the side.
@@ -677,6 +679,12 @@ export function Sniffsalot({
   const working = accuracy > 0.55;
   const struggling = accuracy > 0.05 && !working;
   const done = accuracy <= 0.05;
+  /*
+   * How much he is guessing, 0 to 1. Nothing shows until he is meaningfully
+   * unreliable — a dog who is 5% off should not be wearing a question mark —
+   * and it is full well before he gives up entirely.
+   */
+  const doubt = clamp((1 - accuracy - 0.25) / 0.45, 0, 1);
 
   /*
    * How a front-facing head looks left and right.
@@ -712,7 +720,19 @@ export function Sniffsalot({
   const asProfile = sideness > 0.55 ? 1 : 0;
   // Front-on reaches as far as it can before handing over, so the switch is a
   // small step rather than a jump.
-  const faceX = turn * 14;
+  /*
+   * Shaking his head: three swings, a pause, three more.
+   *
+   * It rides on the same face-slide that does the pointing, so it is the same
+   * motion the player has already learnt to read — except now it is going
+   * side to side instead of settling somewhere, which is the whole message.
+   * Intermittent rather than constant, because a dog shaking his head forever
+   * is a twitch; three swings and a rest is somebody saying no.
+   */
+  const shakeCycle = t % 3.4;
+  const shaking = done && shakeCycle < 0.95;
+  const shake = shaking ? Math.sin((shakeCycle / 0.95) * Math.PI * 3) * 8 : 0;
+  const faceX = turn * 14 + shake;
   const faceLift = pointing ? screenY * 5 : 0;
   /*
    * Squeezing the face is the *only* thing that sells the turn while he is still
@@ -999,6 +1019,38 @@ export function Sniffsalot({
           <Group>
             <Stroke d="M -31 -52 L -42 -58" color={palette.stinkDeep} weight={3} />
             <Stroke d="M 31 -52 L 42 -58" color={palette.stinkDeep} weight={3} />
+          </Group>
+        ) : null}
+
+        {/*
+          How much of what he is telling you is a guess.
+          
+          This is the only thing in the game that says the nose has gone, and it
+          has to be *graded* rather than a light that comes on, because the nose
+          does not fail at a threshold — it fades. By stink 50 he can be pointing
+          115 degrees wrong while looking exactly as certain as he did at zero,
+          and that band is where a player is misled most. So the doubt fades in
+          with the error: faint when he is mostly right, solid once he has given
+          up and sat down.
+
+          It is drawn here rather than as a pointer in `Room` so that it follows
+          him for free, in his own box, at his own scale.
+        */}
+        {doubt > 0.02 ? (
+          <Group opacity={doubt} transform={[{ translateY: wobble(t, 2.4, 2) }] as Transforms3d}>
+            {/* a pale disc behind it, so it reads on grass and on a board floor alike */}
+            <Circle cx={2} cy={-108} r={15} color={palette.paper} opacity={0.82} />
+            <Circle
+              cx={2}
+              cy={-108}
+              r={15}
+              color={palette.inkSoft}
+              style="stroke"
+              strokeWidth={2}
+              opacity={0.5}
+            />
+            <Stroke d={S_QUERY} color={palette.ink} weight={4.4} />
+            <Circle cx={2} cy={-99} r={2.6} color={palette.ink} />
           </Group>
         ) : null}
       </Group>

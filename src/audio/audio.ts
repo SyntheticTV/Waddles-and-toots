@@ -22,7 +22,7 @@ import { useEffect } from 'react';
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 
 import type { RunState } from '../game/engine';
-import { stageFor } from '../game/stink';
+import { noseAccuracy, stageFor } from '../game/stink';
 import { STINK_MAX } from '../game/tuning';
 import type { SceneryKind } from '../game/types';
 import { getSettings, subscribeToSettings } from '../settings';
@@ -64,7 +64,15 @@ interface Voices {
 interface Bank {
   voices: Map<SoundId, Voices>;
   level: Map<SoundId, number>;
-  was: { stage: string; sliding: boolean; freshAir: boolean; outcome: string; localMood: string };
+  was: {
+    stage: string;
+    sliding: boolean;
+    freshAir: boolean;
+    outcome: string;
+    localMood: string;
+    /** Whether the dog's nose was working last frame. */
+    nose: boolean;
+  };
   inGame: boolean;
   /** Which room bed belongs to the level being played. */
   bed: (typeof ROOM_BEDS)[number];
@@ -154,7 +162,14 @@ export function startAudio(): void {
   bank = {
     voices,
     level: new Map(),
-    was: { stage: 'calm', sliding: false, freshAir: false, outcome: 'playing', localMood: 'waiting' },
+    was: {
+      stage: 'calm',
+      sliding: false,
+      freshAir: false,
+      outcome: 'playing',
+      localMood: 'waiting',
+      nose: true,
+    },
     inGame: false,
     bed: 'bed-yard',
     lastSnoreAt: -99,
@@ -312,6 +327,7 @@ export function enterGame(scenery: SceneryKind = 'yard'): void {
     freshAir: false,
     outcome: 'playing',
     localMood: 'waiting',
+    nose: true,
   };
   bank.lastSnoreAt = -99;
   applyAudioSettings();
@@ -394,6 +410,17 @@ export function followRun(run: RunState): void {
     playSound('bark');
   }
   bank.was.freshAir = freshAir;
+
+  /*
+   * And the other half of that: the moment his nose gives out, he says so.
+   *
+   * Edge-triggered on the way *down* only. The bark already covers coming back,
+   * and a sound on both edges would fire twice every time somebody walks along
+   * the edge of a fresh-air source.
+   */
+  const noseWorks = noseAccuracy(run.stink, run.freshAirLock) > 0.05;
+  if (!noseWorks && bank.was.nose && !over) playSound('whine');
+  bank.was.nose = noseWorks;
 
   followLocal(run);
 
