@@ -143,6 +143,14 @@ export interface RunState {
 
   nuggets: { pos: Vec2; taken: boolean }[];
   collected: number;
+  /**
+   * How many times Toots has gone off this run.
+   *
+   * Kept on the run rather than counted from events, because events are drained
+   * every frame — anything that wants a *total* has to be told as it happens.
+   * §13's second star is crossing a room without a single one.
+   */
+  poofs: number;
   /** True once every nugget is in and the gate has swung open. §11. */
   gateOpen: boolean;
   /** Standing in the gateway. With the gate shut, that is worth saying out loud. */
@@ -227,6 +235,7 @@ export function createRun(level: LevelSpec, opts: CreateRunOptions = {}): RunSta
 
     nuggets: level.nuggets.map((pos) => ({ pos: { ...pos }, taken: false })),
     collected: 0,
+    poofs: 0,
     gateOpen: level.nuggets.length === 0,
     atExit: false,
 
@@ -473,6 +482,7 @@ function checkBumps(s: RunState, dtMs: number): void {
   s.stink = applyPoof(s.stink);
   s.poofCooldownMs = T.POOF_COOLDOWN_MS;
   s.puffs.push({ pos: { x: toots.pos.x, y: toots.pos.y - 3 }, age: 0 });
+  s.poofs += 1;
   s.events.push({ kind: 'poof', at: { ...toots.pos } });
 }
 

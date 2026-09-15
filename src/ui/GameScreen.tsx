@@ -22,6 +22,7 @@ import {
 } from '../game/engine';
 import { enterGame, followRun, leaveGame, playSound } from '../audio/audio';
 import { SOUND_FOR_EVENT } from '../audio/library';
+import { recordRun } from '../progress';
 import { reactToToot, sayAnimal, sayBlame, sayCaught, sayDecoy } from '../audio/voices';
 import { DECOY_COOLDOWN_MS, SLIDE_MAX_MS } from '../game/tuning';
 import type { LevelSpec } from '../game/types';
@@ -67,7 +68,28 @@ export function GameScreen({
   useEffect(() => {
     runRef.current = createRun(level);
     inputRef.current = { move: { x: 0, y: 0 }, slideHeld: false, decoyPressed: false };
+    savedRef.current = false;
   }, [level, runId]);
+
+  /*
+   * Save on level end, always — the house rule, and the thing that decides
+   * whether room five is somewhere a player can get back to.
+   *
+   * Guarded by a ref rather than an effect dependency because the loop
+   * re-renders every frame and the run object is mutated in place: `outcome`
+   * changing is not something React can see, so this is checked on the frame the
+   * end card appears and then latched.
+   */
+  const savedRef = useRef(false);
+  const finished = runRef.current.outcome !== 'playing';
+  if (finished && !savedRef.current) {
+    savedRef.current = true;
+    recordRun(level.id, {
+      cleared: runRef.current.outcome === 'escaped',
+      poofs: runRef.current.poofs,
+      seconds: runRef.current.elapsed / 1000,
+    });
+  }
 
   useEffect(() => {
     let raf = 0;

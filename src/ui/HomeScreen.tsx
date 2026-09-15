@@ -19,9 +19,12 @@ import { palette } from '../theme/palette';
 
 export function HomeScreen({
   onStart,
+  onRooms,
   onSettings,
 }: {
   onStart: () => void;
+  /** Open the room picker. Only offered once there is a choice to make. */
+  onRooms?: () => void;
   onSettings: () => void;
 }) {
   const { width } = useWindowDimensions();
@@ -71,6 +74,25 @@ export function HomeScreen({
         >
           <Text style={styles.startText}>START</Text>
         </Pressable>
+
+        {/*
+          Hidden until a second room is open. A picker with one thing in it is a
+          button that does nothing, and on the first launch — which is the one
+          that matters — START is the only thing anybody should be looking at.
+        */}
+        {onRooms ? (
+          <Pressable
+            style={({ pressed }) => [styles.settings, pressed && styles.pressed]}
+            onPress={() => {
+              playSound('ui-tap');
+              onRooms();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Choose a room"
+          >
+            <Text style={styles.settingsText}>Rooms</Text>
+          </Pressable>
+        ) : null}
 
         <Pressable
           style={({ pressed }) => [styles.settings, pressed && styles.pressed]}

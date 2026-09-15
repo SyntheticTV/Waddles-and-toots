@@ -53,10 +53,12 @@ src/
     audio.ts      the service: one-shots, the beds, the jingle, the settings
     voices.ts     the people talking, through the device's text-to-speech
   settings.ts   two switches, remembered between sessions
+  progress.ts   which rooms are open and what they earned, ditto
   theme/
     palette.ts  the ink set and the art set, shared with the design bible
   ui/
-    HomeScreen    title, START, Settings
+    HomeScreen    title, START, Rooms, Settings
+    LevelSelect   pick a room; locked ones are shown, not hidden
     SettingsPanel the two switches
     GameScreen    the loop, input, haptics, end card
     Room          camera, draw order, composition — no shapes of its own
@@ -127,6 +129,19 @@ reason a held button is never `disabled`: a `Pressable` that goes disabled
 mid-press never fires `onPressOut`, which strands the input as held. Grey the
 button out, but always let the gesture finish. Menus are outside play and can use
 `Pressable` freely.
+
+**Two saved stores, and neither is a game rule.** `settings.ts` holds the three
+switches and `progress.ts` holds which rooms are open and what they earned. Both
+are plain module-level stores behind `useSyncExternalStore` — not contexts —
+because the audio service is not a React component and still has to read the
+settings synchronously. Both are written fire-and-forget: a failed write costs a
+preference or a star, which is not worth blocking a button tap over.
+
+Progress is keyed by **level id, never by index**, so inserting a room in the
+middle does not hand somebody else's stars to whatever took its place. Nothing in
+there is ever taken away — a messy replay cannot lose a star a clean run earned,
+and losing costs nothing already banked. `recordRun` is called on *every* ending,
+win or lose, from the frame the end card appears.
 
 **Audio is a service, not a hook.** The jingle plays across the home screen, the
 settings panel and the room, and no screen outlives another — so `audio.ts` owns

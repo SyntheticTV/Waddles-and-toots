@@ -547,6 +547,19 @@ a sensible route rather than in a corner nobody visits.
 ## 13. Progression
 
 - Levels unlock in order; completed levels are replayable for a better nugget haul.
+  **Built.** The first room is always open and each one after it opens when the
+  one before it is cleared. START carries on from the first room you have *not*
+  cleared rather than starting the game over — and once everything is cleared it
+  stays on the last one, so finishing the game does not leave START pointing at
+  nothing.
+- **Locked rooms are shown, not hidden.** A six-year-old who can see there is a
+  school after the restaurant has a reason to get through the restaurant; a list
+  that grows out of nowhere gives them nothing to want. Their *names* are still
+  withheld — a named room is a spoiled surprise rather than a reason to keep
+  going — so a locked row reads "? ? ?" until it opens.
+- The Rooms button is hidden until a second room is open. A picker with one thing
+  in it is a button that does nothing, and on a first launch START should be the
+  only thing on the screen worth looking at.
 - Nuggets feed a shared trough — a between-levels beat where the four of them eat,
   which is where hats, scarves and silly accessories get unlocked.
 - Per-level stars: **crossed it** / **crossed it without a single poof** / and a
