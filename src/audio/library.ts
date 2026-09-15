@@ -77,6 +77,8 @@ export const SOUNDS = {
   'bed-yard': { source: require('../../assets/audio/bed-yard.wav'), gain: 0.5, voices: 1, loop: true },
   /** Indoors: babble, cutlery, and the extractor. Always there. */
   'bed-room': { source: require('../../assets/audio/bed-room.wav'), gain: 0.5, voices: 1, loop: true },
+  /** The beach: waves arriving, and gulls. */
+  'bed-surf': { source: require('../../assets/audio/bed-surf.wav'), gain: 0.5, voices: 1, loop: true },
   /** The pressure, faded up by the meter. */
   'bed-stink': { source: require('../../assets/audio/bed-stink.wav'), gain: 0.7, voices: 1, loop: true },
   /** The jingle, on its own switch in settings. Plays everywhere. */
@@ -98,7 +100,7 @@ export type SoundId = keyof typeof SOUNDS;
  * Exactly one of these plays at a time; the audio service fades the others out
  * when the room changes.
  */
-export const ROOM_BEDS = ['bed-yard', 'bed-room'] as const satisfies readonly SoundId[];
+export const ROOM_BEDS = ['bed-yard', 'bed-room', 'bed-surf'] as const satisfies readonly SoundId[];
 
 /** The screams, in the order they were written; the voice layer deals them. */
 export const SCREAMS = ['scream-1', 'scream-2', 'scream-3'] as const satisfies readonly SoundId[];
@@ -109,6 +111,7 @@ export const SCREAM_MS = 800;
 export const BED_FOR_SCENERY: Record<SceneryKind, (typeof ROOM_BEDS)[number]> = {
   yard: 'bed-yard',
   indoor: 'bed-room',
+  beach: 'bed-surf',
 };
 
 /**

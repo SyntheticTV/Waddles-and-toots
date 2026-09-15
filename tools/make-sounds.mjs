@@ -647,6 +647,66 @@ sounds['bed-room'] = () => {
 };
 
 /**
+ * The beach: waves arriving, and gulls who have already seen worse than this.
+ * Loops.
+ *
+ * Slow swells of filtered noise are exactly what made the first restaurant bed
+ * sound like an ocean — which was wrong there and is the entire point here. Each
+ * wave is a separate arrival with a rise, a break and a long drag back, rather
+ * than one continuous hiss, because a hiss is a radio and a beach is a rhythm.
+ */
+sounds['bed-surf'] = () => {
+  const len = 13.2;
+  const out = buf(len);
+
+  /** One wave: it builds, breaks bright, and drags back down the sand. */
+  const wave = (t0, dur, size) => {
+    const build = dur * 0.42;
+    const body = bandpass(
+      noise({
+        dur,
+        amp: (u) =>
+          u < build
+            ? Math.pow(u / build, 1.6)
+            : Math.pow(Math.max(0, 1 - (u - build) / (dur - build)), 1.3),
+      }),
+      (u) => 260 + 900 * Math.min(1, u / build),
+      0.9
+    );
+    mix(out, body, t0, size);
+    // the break: brighter, and only at the top of it
+    mix(
+      out,
+      bandpass(noise({ dur: dur * 0.5, amp: swell(dur * 0.5, 1.7) }), 2400, 1.1),
+      t0 + build * 0.7,
+      size * 0.45
+    );
+  };
+  wave(0, 4.6, 0.9);
+  wave(3.9, 5.2, 0.7);
+  wave(8.4, 4.8, 0.85);
+
+  // The sea underneath all of it, so the gaps between waves are not silent.
+  mix(out, lowpass(noise({ dur: len, amp: (u) => 0.5 + 0.2 * Math.sin(TAU * 0.09 * u) }), 320), 0, 0.3);
+
+  // Gulls. Two of them, unevenly, because three is a flock and one is lonely.
+  const gull = (t0, f) => {
+    for (let i = 0; i < 3; i++) {
+      mix(
+        out,
+        chirp({ dur: 0.16 - i * 0.02, from: f, to: f * 0.72, amp: 0.7 - i * 0.14 }),
+        t0 + i * 0.26,
+        0.5
+      );
+    }
+  };
+  gull(2.1, 1650);
+  gull(9.7, 1480);
+
+  return seamless(out, 1.6);
+};
+
+/**
  * The pressure. A low uneasy drone the game fades up as the meter climbs, so the
  * room feels worse before anybody says anything. Loops.
  */
@@ -1052,6 +1112,7 @@ const PEAK = {
   // A near-empty room: nearly all of its energy is in a handful of clicks, so
   // it is levelled by the events rather than by an average nobody can hear.
   'bed-room': 0.5,
+  'bed-surf': 0.4,
   'bed-stink': 0.4,
   slide: 0.6,
   sniff: 0.62,

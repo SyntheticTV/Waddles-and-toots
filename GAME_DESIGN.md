@@ -440,8 +440,13 @@ Each level is one room crossed entrance-to-exit, with an escape that suits the p
 | 2 | Fine restaurant | Kitchen's back door | Kitchen mouse | The cabbage, the cheese cart, the onions, a truffle |
 | 3 | School hallway | Gym fire doors | Classroom hamster | The lockers, the cafeteria, the science lab, a kid named Kevin |
 | 4 | Sunrise yoga | The fire door behind the mats | Studio cat | The hot room, the diffuser, the sock basket, Barbara's mat |
-| 5 | Beach | Boardwalk ramp | Dolphin | Seaweed, low tide, the bait bucket |
+| 5 | Sunset beach | The boardwalk ramp | Jetty otter | Seaweed, low tide, the bait bucket, Gary's catch |
 | 6 | Firehouse kitchen | The pole / bay door | The dalmatian | The chili pot, turnout gear, the boots |
+
+> The beach's local was written as a dolphin, and a dolphin would be better once
+> the locals have their own silhouettes. They all share the squirrel's for now,
+> so a dolphin would come out as a blue-grey squirrel; an otter belongs on that
+> shoreline *and* survives the shared shape.
 
 > The school moved up from five to three because it is the natural place to
 > teach the false-exit rule: a corridor is already a row of identical doors, so
@@ -490,6 +495,25 @@ fresh air at both ends, so the nose can always be cleared.
 
 Later rooms will widen and put doors on the sides as well. Not yet — the width is
 still fixed at `WORLD_WIDTH`.
+
+### Cover, and the room that has none
+
+Rooms are built out of the thing you put between yourself and the crowd. The
+backyard has furniture, the restaurant a grid of tables, the hallway banks of
+lockers, the studio rows of mats — and in all four the answer to a crowd is to
+get an object between you and it.
+
+**The beach removes that, on purpose.** Eight objects on five hundred and sixty
+units of open sand, and none of them hides anybody: an umbrella blocks your path
+without blocking anyone's view. What replaces cover is the **water's edge** —
+clean air the whole length of one side, so the room becomes a route decision
+rather than a maze. Hug the water and the meter is on hold and the nose works,
+but it is the long way round in full view; cut across the dry sand and it is half
+the distance with not a lungful of clean air on it.
+
+That is also why the fish are pulled toward the dry side. If they sat in the
+breeze the waterline would be one safe corridor and the room would have no
+decision in it.
 
 ### The local is always an animal
 
@@ -584,7 +608,8 @@ a sensible route rather than in a corner nobody visits.
   then blaming and then going up all at once, the win fanfare and the losing
   trombone, the latch letting go when the last fish goes in, plus looping beds:
   **one per room** — wind and birds in the yard, babble and cutlery and the
-  glass and moved dishes over a quiet room tone in the restaurant — under a low
+  glass and moved dishes over a quiet room tone in the restaurant, waves arriving
+  and gulls on the beach — under a low
   pressure drone the game fades up as the meter climbs so the room feels worse
   before anybody says anything. Exactly one room bed plays at a time, chosen by
   the level's scenery, because a restaurant with wind in it is wrong in a way a

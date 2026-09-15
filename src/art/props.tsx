@@ -1750,6 +1750,523 @@ const MirrorWall = () => (
   </Group>
 );
 
+// ---------------------------------------------------------------- the beach
+//
+// A beach has almost nothing on it, so each of these has to carry further than
+// an indoor prop does — there is no wall behind them and no floor pattern under
+// them, just pale sand. Everything here is therefore a strong silhouette with
+// one saturated colour in it; a beige object on beige sand disappears.
+
+const CANVAS_RED = '#D96A5A';
+const CANVAS_BLUE = '#5B94B8';
+
+/** Kelp, hauled up the sand by the tide and left there. */
+const Seaweed = ({ t }: ArtProps) => (
+  <Group>
+    {[
+      ['M 8 50 C 26 38 30 52 48 42 C 62 34 72 46 92 38', '#4E6B3A'],
+      ['M 12 58 C 30 50 38 62 56 52 C 70 44 80 56 94 48', '#3E5A2C'],
+    ].map(([d, c], i) => (
+      <Stroke key={i} d={d as string} color={c as string} weight={9 - i * 2} />
+    ))}
+    {/* the bladders, which are the one detail that says kelp and not rope */}
+    {[
+      [26, 45],
+      [48, 43],
+      [68, 42],
+      [38, 57],
+      [62, 51],
+    ].map(([x, y], i) => (
+      <Circle key={i} cx={x} cy={y} r={4} color="#6A8A4C" />
+    ))}
+    <Whiff x={32} y={34} t={t} />
+    <Whiff x={66} y={30} t={t} phase={1.5} />
+  </Group>
+);
+
+/** The bait bucket. In the sun. Since this morning. */
+const BaitBucket = ({ t }: ArtProps) => (
+  <Group>
+    <Form
+      d="M 24 44 L 76 44 L 68 108 L 32 108 Z"
+      colors={[lighten(CANVAS_BLUE, 0.28), CANVAS_BLUE, darken(CANVAS_BLUE, 0.36)]}
+      positions={[0, 0.45, 1]}
+      from={[26, 44]}
+      to={[74, 106]}
+      outline="#2E5470"
+      weight={OUTLINE_FINE}
+    />
+    <Ink d="M 20 38 L 80 38 L 80 48 L 20 48 Z" fill={darken(CANVAS_BLUE, 0.2)} outline="#2E5470" weight={2} />
+    {/* the handle, and a tail going over the side */}
+    <Stroke d="M 24 40 q 26 -26 52 0" color={art.metalDark} weight={4} />
+    <Ink d="M 58 40 q 14 -10 20 2 q -10 8 -20 -2 Z" fill={art.shell} outline="#8A7A5C" weight={2} />
+    <Whiff x={36} y={30} t={t} />
+    <Whiff x={64} y={24} t={t} phase={1.3} />
+    <Whiff x={50} y={18} t={t} phase={2.2} />
+    <Sheen cx={36} cy={56} r={20} strength={0.26} />
+  </Group>
+);
+
+/** Low tide: the flats it leaves behind, and what is living in them. */
+const LowTide = ({ t }: ArtProps) => (
+  <Group>
+    <Ink
+      d="M 4 32 q 24 -10 46 -4 q 26 6 46 -2 l 0 26 q -22 8 -46 2 q -22 -6 -46 2 Z"
+      fill={art.sandWet}
+      outline="#9C8A6A"
+      weight={OUTLINE_FINE}
+    />
+    {/* pools left in the ripples */}
+    {[
+      [22, 42, 8],
+      [50, 46, 10],
+      [76, 40, 7],
+    ].map(([x, y, r], i) => (
+      <Group key={i}>
+        <Circle cx={x} cy={y} r={r} color={art.shallow} opacity={0.9} />
+        <Circle cx={x - r * 0.3} cy={y - r * 0.3} r={r * 0.4} color={art.foam} opacity={0.55} />
+      </Group>
+    ))}
+    <Stroke d="M 8 52 q 20 6 42 2 q 22 -4 42 2" color="#9C8A6A" weight={2.5} opacity={0.6} />
+    <Whiff x={34} y={26} t={t} />
+    <Whiff x={64} y={22} t={t} phase={1.7} />
+  </Group>
+);
+
+/** A bottle of sunscreen from another era. */
+const Sunscreen = ({ t }: ArtProps) => (
+  <Group>
+    <Form
+      d="M 32 40 q 18 -6 36 0 l 0 52 q -18 6 -36 0 Z"
+      colors={[palette.white, lighten(palette.nugget, 0.4), darken(palette.nugget, 0.18)]}
+      positions={[0, 0.4, 1]}
+      from={[32, 40]}
+      to={[68, 92]}
+      outline="#9A6E18"
+      weight={OUTLINE_FINE}
+    />
+    <Ink d="M 42 24 L 58 24 L 58 42 L 42 42 Z" fill={darken(palette.nugget, 0.28)} outline="#9A6E18" weight={2} />
+    <Ink d="M 38 14 L 62 14 L 62 26 L 38 26 Z" fill={palette.alarm} outline="#8E3A2E" weight={2} />
+    {/* a label that has been in a bag for several summers */}
+    <Ink d="M 36 54 L 64 54 L 64 76 L 36 76 Z" fill={palette.paper} outline="#A89C82" weight={2} />
+    <Stroke d="M 41 62 L 59 62 M 41 68 L 55 68" color={palette.inkSoft} weight={2.5} opacity={0.7} />
+    <Whiff x={72} y={26} t={t} />
+  </Group>
+);
+
+/** A cooler nobody has opened since Saturday. */
+const OldCooler = ({ t }: ArtProps) => (
+  <Group>
+    <Form
+      d="M 8 38 L 92 38 L 86 68 L 14 68 Z"
+      colors={[lighten(palette.breeze, 0.18), darken(palette.breeze, 0.18), darken(palette.breeze, 0.44)]}
+      positions={[0, 0.5, 1]}
+      from={[10, 38]}
+      to={[88, 68]}
+      outline="#4A6A78"
+      weight={OUTLINE_FINE}
+    />
+    <Ink d="M 4 26 L 96 26 L 92 40 L 8 40 Z" fill={palette.white} outline="#4A6A78" weight={2} />
+    <Stroke d="M 12 48 L 88 48" color="#4A6A78" weight={2.5} opacity={0.5} />
+    {/* the latch, doing the heaviest work in this entire game */}
+    <Ink d="M 42 36 L 58 36 L 58 50 L 42 50 Z" fill={art.metalDark} outline="#3E4347" weight={2} />
+    <Whiff x={26} y={20} t={t} />
+    <Whiff x={56} y={14} t={t} phase={1.4} />
+    <Whiff x={78} y={18} t={t} phase={2.5} />
+    <Sheen cx={22} cy={32} r={24} strength={0.3} />
+  </Group>
+);
+
+/** Flip-flops with a past. */
+const FlipFlops = ({ t }: ArtProps) => (
+  <Group>
+    {[
+      [6, 44, CANVAS_RED, 0.14],
+      [50, 38, '#4E7F6A', -0.1],
+    ].map(([x, y, c, rot], i) => (
+      <Group
+        key={i}
+        transform={
+          [
+            { translateX: Number(x) + 22 },
+            { translateY: Number(y) + 14 },
+            { rotate: Number(rot) },
+            { translateX: -(Number(x) + 22) },
+            { translateY: -(Number(y) + 14) },
+          ] as Transforms3d
+        }
+      >
+        <Ink
+          d={`M ${x} ${Number(y) + 10} q 0 -12 22 -12 q 22 0 22 12 q 0 16 -22 16 q -22 0 -22 -16 Z`}
+          fill={c as string}
+          outline={darken(c as string, 0.4)}
+          weight={OUTLINE_FINE}
+        />
+        <Stroke
+          d={`M ${Number(x) + 22} ${Number(y) + 2} L ${Number(x) + 10} ${Number(y) + 18} M ${
+            Number(x) + 22
+          } ${Number(y) + 2} L ${Number(x) + 34} ${Number(y) + 18}`}
+          color={darken(c as string, 0.45)}
+          weight={4}
+        />
+      </Group>
+    ))}
+    <Whiff x={30} y={30} t={t} />
+    <Whiff x={70} y={24} t={t} phase={1.6} />
+  </Group>
+);
+
+/** Whatever Gary caught. */
+const GarysCatch = ({ t }: ArtProps) => (
+  <Group>
+    <Form
+      d="M 16 52 q 22 -22 48 -2 q 12 10 0 20 q -26 20 -48 -2 Z"
+      colors={[lighten(art.shell, 0.3), art.shell, darken(art.shell, 0.34)]}
+      positions={[0, 0.45, 1]}
+      from={[18, 34]}
+      to={[62, 72]}
+      outline="#7A6A4C"
+      weight={OUTLINE_FINE}
+    />
+    {/* the tail, and an eye that has given up */}
+    <Ink d="M 62 52 L 88 34 L 88 70 Z" fill={darken(art.shell, 0.18)} outline="#7A6A4C" weight={2} />
+    <Circle cx={30} cy={48} r={5} color={palette.white} />
+    <Stroke d="M 27 45 L 33 51 M 33 45 L 27 51" color={palette.ink} weight={2.2} />
+    <Stroke d="M 24 58 q 8 4 16 0" color="#7A6A4C" weight={2.2} opacity={0.7} />
+    <Whiff x={40} y={28} t={t} />
+    <Whiff x={66} y={22} t={t} phase={1.9} />
+  </Group>
+);
+
+/** The boardwalk bins, in high summer. */
+const BoardwalkBins = ({ t }: ArtProps) => (
+  <Group>
+    {[
+      [6, '#5E6B4A'],
+      [54, '#4E5C3E'],
+    ].map(([x, c], i) => (
+      <Group key={i}>
+        <Form
+          d={`M ${x} 34 L ${Number(x) + 40} 34 L ${Number(x) + 35} 78 L ${Number(x) + 5} 78 Z`}
+          colors={[lighten(c as string, 0.3), c as string, darken(c as string, 0.34)]}
+          positions={[0, 0.45, 1]}
+          from={[Number(x), 34]}
+          to={[Number(x) + 40, 78]}
+          outline="#333C28"
+          weight={OUTLINE_FINE}
+        />
+        <Ink
+          d={`M ${Number(x) - 3} 26 L ${Number(x) + 43} 26 L ${Number(x) + 41} 36 L ${
+            Number(x) - 1
+          } 36 Z`}
+          fill={darken(c as string, 0.24)}
+          outline="#333C28"
+          weight={2}
+        />
+      </Group>
+    ))}
+    {/* something has been put in sideways */}
+    <Ink d="M 62 18 L 86 10 L 88 22 L 64 30 Z" fill={art.shell} outline="#8A7A5C" weight={2} />
+    <Whiff x={24} y={18} t={t} />
+    <Whiff x={48} y={10} t={t} phase={1.2} />
+    <Whiff x={76} y={6} t={t} phase={2.3} />
+  </Group>
+);
+
+/** The sea breeze. The only clean air on the whole beach. */
+const SeaBreeze = ({ t }: ArtProps) => (
+  <Group>
+    {/*
+      This one needs an *object*, not just moving air.
+      
+      Drawn as breeze lines alone it was all but invisible on pale sand, which is
+      indefensible for the only clean air on the beach — a player cannot choose a
+      route round something they cannot see. So it is the wash of a wave arriving:
+      foam on the sand, spray coming off it, and the breeze above that.
+    */}
+    {/*
+      Everything here lives inside y 0-133, which is this prop's whole box. The
+      first version put the wave at y 128-158 and it was simply clipped away —
+      the art is fitted to its footprint, so anything drawn past the box is not
+      small, it is gone.
+    */}
+    <Sheen cx={50} cy={100} r={52} color={art.foam} strength={0.55} />
+    <Ink
+      d="M 0 112 q 24 -20 50 -14 q 26 6 50 -10 l 0 21 q -24 12 -50 6 q -26 -6 -50 6 Z"
+      fill={art.deep}
+      outline={darken(art.deep, 0.3)}
+      weight={OUTLINE_FINE}
+    />
+    <Ink
+      d="M 2 108 q 24 -16 48 -10 q 24 6 46 -8 l 0 10 q -22 11 -46 5 q -24 -6 -48 6 Z"
+      fill={art.shallow}
+      outline={darken(art.deep, 0.2)}
+      weight={2}
+    />
+    {/* spray coming off the top of it */}
+    {[
+      [16, 90, 4.5],
+      [38, 82, 3.4],
+      [60, 86, 5],
+      [82, 78, 3.8],
+    ].map(([x, y, r], i) => (
+      <Circle key={i} cx={x} cy={y + Math.sin(t * 2.4 + i) * 3} r={r} color={art.foam} opacity={0.9} />
+    ))}
+    {/* and the breeze itself, coming up off the water */}
+    {[0, 1, 2].map((i) => (
+      <Stroke
+        key={i}
+        d={`M ${8 + i * 6} ${64 - i * 24} q 22 ${-13 - i * 2} 40 -2 q 16 10 34 -7`}
+        color={i % 2 ? palette.breeze : art.foam}
+        weight={7 - i}
+        opacity={0.7 + 0.25 * Math.sin(t * 1.6 + i * 0.8)}
+      />
+    ))}
+  </Group>
+);
+
+/** A beach umbrella. Blocks the way; hides nobody. */
+const Umbrella = () => (
+  <Group>
+    <Stroke d="M 50 76 L 54 18" color={art.woodDark} weight={5} />
+    <Form
+      d="M 6 40 q 44 -34 88 0 q -44 -12 -88 0 Z"
+      colors={[lighten(CANVAS_RED, 0.3), CANVAS_RED, darken(CANVAS_RED, 0.34)]}
+      positions={[0, 0.45, 1]}
+      from={[8, 14]}
+      to={[92, 42]}
+      outline="#8E3A2E"
+      weight={OUTLINE_FINE}
+    />
+    {[24, 50, 76].map((x, i) => (
+      <Stroke key={i} d={`M 50 16 L ${x} 40`} color={darken(CANVAS_RED, 0.4)} weight={2.4} opacity={0.65} />
+    ))}
+    <Ink d="M 30 70 q 20 -8 42 0 q -20 10 -42 0 Z" fill={art.sandWet} outline="#9C8A6A" weight={2} />
+    <Sheen cx={26} cy={26} r={26} strength={0.3} />
+  </Group>
+);
+
+/** A windbreak: four poles and a stretch of stripey canvas. */
+const Windbreak = () => (
+  <Group>
+    {[4, 34, 64, 94].map((x, i) => (
+      <Stroke key={i} d={`M ${x} 30 L ${x} 4`} color={art.woodDark} weight={3.5} />
+    ))}
+    {[
+      [4, CANVAS_RED],
+      [34, palette.white],
+      [64, CANVAS_BLUE],
+    ].map(([x, c], i) => (
+      <Ink
+        key={i}
+        d={`M ${x} 6 L ${Number(x) + 30} 6 L ${Number(x) + 30} 26 L ${x} 26 Z`}
+        fill={c as string}
+        outline="#7A6A4C"
+        weight={2}
+      />
+    ))}
+    <Sheen cx={22} cy={12} r={20} strength={0.26} />
+  </Group>
+);
+
+/** An upturned rowboat, which is the only proper cover on the beach. */
+const Rowboat = () => (
+  <Group>
+    <Form
+      d="M 4 28 q 46 -22 92 0 q -8 20 -46 20 q -38 0 -46 -20 Z"
+      colors={[lighten(CANVAS_BLUE, 0.3), CANVAS_BLUE, darken(CANVAS_BLUE, 0.4)]}
+      positions={[0, 0.45, 1]}
+      from={[6, 8]}
+      to={[92, 46]}
+      outline="#2E5470"
+      weight={OUTLINE_FINE}
+    />
+    <Stroke d="M 8 26 q 42 -16 84 0" color={palette.white} weight={3.5} opacity={0.8} />
+    <Stroke d="M 12 34 q 38 -12 76 0" color={darken(CANVAS_BLUE, 0.45)} weight={2.4} opacity={0.6} />
+    <Sheen cx={26} cy={18} r={24} strength={0.3} />
+  </Group>
+);
+
+/** The lifeguard tower. Nobody is in it. */
+const LifeguardTower = () => (
+  <Group>
+    {[14, 78].map((x, i) => (
+      <Stroke key={i} d={`M ${x} 134 L ${x + (i ? -6 : 6)} 62`} color={art.woodDark} weight={6} />
+    ))}
+    <Stroke d="M 20 104 L 74 104" color={art.woodDark} weight={4} />
+    <Ink d="M 10 58 L 90 58 L 86 96 L 14 96 Z" fill={palette.white} outline="#8A7A5C" weight={OUTLINE_FINE} />
+    <Ink d="M 4 40 L 96 40 L 90 60 L 10 60 Z" fill={CANVAS_RED} outline="#8E3A2E" weight={2} />
+    <Panel x={26} y={66} w={48} h={20} colors={[art.shallow, darken(art.shallow, 0.3)]} r={2} />
+    <Sheen cx={26} cy={48} r={24} strength={0.3} />
+  </Group>
+);
+
+/** A sandcastle, with about four minutes left. */
+const Sandcastle = () => (
+  <Group>
+    {[
+      [10, 46],
+      [38, 34],
+      [66, 46],
+    ].map(([x, y], i) => (
+      <Group key={i}>
+        <Form
+          d={`M ${x} 90 L ${Number(x) + 4} ${y} L ${Number(x) + 22} ${y} L ${Number(x) + 26} 90 Z`}
+          colors={[lighten(art.sand, 0.1), art.sandWet, darken(art.sandWet, 0.28)]}
+          positions={[0, 0.5, 1]}
+          from={[Number(x), Number(y)]}
+          to={[Number(x) + 26, 90]}
+          outline="#9C8A6A"
+          weight={OUTLINE_FINE}
+        />
+        <Ink
+          d={`M ${Number(x) + 2} ${Number(y) - 6} L ${Number(x) + 24} ${Number(y) - 6} L ${
+            Number(x) + 24
+          } ${y} L ${Number(x) + 2} ${y} Z`}
+          fill={art.sandWet}
+          outline="#9C8A6A"
+          weight={2}
+        />
+      </Group>
+    ))}
+    <Stroke d="M 51 28 L 51 10" color={art.woodDark} weight={2.5} />
+    <Ink d="M 51 10 L 72 16 L 51 22 Z" fill={CANVAS_RED} outline="#8E3A2E" weight={2} />
+  </Group>
+);
+
+/** A beach ball, which will go a very long way if kicked. */
+const BeachBall = () => (
+  <Group>
+    <Circle cx={50} cy={52} r={40} color={palette.white} />
+    {[
+      [CANVAS_RED, 'M 50 12 q 22 18 0 80 q -14 -40 0 -80 Z'],
+      [CANVAS_BLUE, 'M 50 12 q -22 18 0 80 q 14 -40 0 -80 Z'],
+      [palette.nugget, 'M 12 44 q 38 -14 76 0 q -38 12 -76 0 Z'],
+    ].map(([c, d], i) => (
+      <Flat key={i} d={d as string} fill={c as string} opacity={0.95} />
+    ))}
+    <Circle cx={50} cy={52} r={40} color="#8A7A5C" style="stroke" strokeWidth={OUTLINE_FINE} />
+    <Sheen cx={34} cy={34} r={22} strength={0.45} />
+  </Group>
+);
+
+/** A spade in a bucket. Somebody will be back for it. */
+const SpadeBucket = () => (
+  <Group>
+    <Stroke d="M 66 78 L 54 16" color={CANVAS_RED} weight={6} />
+    <Ink d="M 46 8 L 68 8 L 64 24 L 50 24 Z" fill={CANVAS_RED} outline="#8E3A2E" weight={2} />
+    <Form
+      d="M 16 40 L 74 40 L 66 90 L 24 90 Z"
+      colors={[lighten(palette.nugget, 0.3), palette.nugget, darken(palette.nugget, 0.36)]}
+      positions={[0, 0.45, 1]}
+      from={[18, 40]}
+      to={[72, 88]}
+      outline="#9A6E18"
+      weight={OUTLINE_FINE}
+    />
+    <Stroke d="M 20 52 q 24 -18 50 0" color={art.metalDark} weight={3} />
+    <Sheen cx={30} cy={52} r={18} strength={0.3} />
+  </Group>
+);
+
+/** A kite, down. */
+const Kite = () => (
+  <Group>
+    <Ink
+      d="M 50 8 L 84 48 L 50 96 L 16 48 Z"
+      fill={'#7FB35E'}
+      outline="#46702E"
+      weight={OUTLINE_FINE}
+    />
+    <Stroke d="M 50 8 L 50 96 M 16 48 L 84 48" color="#46702E" weight={2.4} opacity={0.7} />
+    <Stroke d="M 50 96 q 10 14 -4 20 q -12 6 -2 18" color={art.shell} weight={2.6} />
+    <Ink d="M 40 102 L 54 108 L 40 112 Z" fill={CANVAS_RED} outline="#8E3A2E" weight={1.8} />
+    <Sheen cx={36} cy={34} r={22} strength={0.3} />
+  </Group>
+);
+
+/** Somebody's radio, playing something nobody asked for. */
+const BeachRadio = ({ t }: ArtProps) => (
+  <Group>
+    <Panel
+      x={6}
+      y={24}
+      w={88}
+      h={50}
+      colors={[lighten(art.charcoal, 0.4), darken(art.charcoal, 0.2)]}
+      r={5}
+      outline="#2E2C28"
+    />
+    <Stroke d="M 22 24 q 28 -22 54 -6" color={art.metalDark} weight={3} />
+    <Circle cx={30} cy={50} r={13} color={darken(art.charcoal, 0.42)} />
+    <Circle cx={30} cy={50} r={13} color="#2E2C28" style="stroke" strokeWidth={2} />
+    <Circle cx={30} cy={50} r={5} color={art.metalDark} />
+    <Panel x={52} y={34} w={34} h={16} colors={[palette.nugget, darken(palette.nugget, 0.3)]} r={2} />
+    {[0, 1, 2].map((i) => (
+      <Circle key={i} cx={58 + i * 12} cy={62} r={3.4} color={art.metalDark} />
+    ))}
+    {/* the noise coming out of it */}
+    <Stroke
+      d="M 92 30 q 10 12 0 24"
+      color={palette.inkSoft}
+      weight={2.6}
+      opacity={0.35 + 0.3 * Math.sin(t * 5)}
+    />
+  </Group>
+);
+
+/** The path through the dunes. Looks like a way off the beach. It is not. */
+const DunePath = () => (
+  <Group>
+    <Ink
+      d="M 0 100 q 22 -46 50 -46 q 28 0 50 46 Z"
+      fill={darken(art.sand, 0.1)}
+      outline="#9C8A6A"
+      weight={OUTLINE_FINE}
+    />
+    <Ink
+      d="M 34 100 q 6 -34 16 -34 q 10 0 16 34 Z"
+      fill={art.sandWet}
+      outline="#9C8A6A"
+      weight={2}
+    />
+    {/* marram grass, which is what makes a dune a dune */}
+    {[10, 22, 74, 88].map((x, i) => (
+      <Stroke
+        key={i}
+        d={`M ${x} 92 q ${i % 2 ? 6 : -6} -18 ${i % 2 ? 2 : -2} -30`}
+        color={art.hedgeDark}
+        weight={3}
+      />
+    ))}
+    <Sheen cx={30} cy={68} r={26} strength={0.24} />
+  </Group>
+);
+
+/** The lifeguard's own ramp. Also not for you. */
+const LifeguardRamp = () => (
+  <Group>
+    <Ink
+      d="M 18 114 L 44 26 L 82 26 L 82 114 Z"
+      fill={art.wood}
+      outline="#6E4A22"
+      weight={OUTLINE_FINE}
+    />
+    {[0, 1, 2, 3, 4].map((i) => (
+      <Stroke
+        key={i}
+        d={`M ${24 + i * 4} ${100 - i * 18} L 82 ${100 - i * 18}`}
+        color={darken(art.wood, 0.36)}
+        weight={2.6}
+        opacity={0.7}
+      />
+    ))}
+    <Stroke d="M 44 26 L 44 114" color={darken(art.wood, 0.45)} weight={3} />
+    <Ink d="M 52 10 L 76 10 L 76 26 L 52 26 Z" fill={CANVAS_RED} outline="#8E3A2E" weight={2} />
+    <Sheen cx={36} cy={46} r={24} strength={0.24} />
+  </Group>
+);
+
 const BY_ID: Record<string, Entry> = {
   'potato-salad': { w: 100, h: 50, Art: PotatoSalad },
   grill: { w: 100, h: 80, Art: Grill },
@@ -1847,6 +2364,36 @@ const BY_ID: Record<string, Entry> = {
   'front-desk-door': { w: 100, h: 78, Art: FalseDoor },
   'changing-room': { w: 100, h: 78, Art: FalseDoor },
   'prop-cupboard': { w: 100, h: 78, Art: FalseDoor },
+  // --- the beach ---
+  seaweed: { w: 100, h: 55, Art: Seaweed },
+  'bait-bucket': { w: 100, h: 117, Art: BaitBucket },
+  'low-tide': { w: 100, h: 58, Art: LowTide },
+  sunscreen: { w: 100, h: 100, Art: Sunscreen },
+  'old-cooler': { w: 100, h: 70, Art: OldCooler },
+  'flip-flops': { w: 100, h: 71, Art: FlipFlops },
+  'garys-catch': { w: 100, h: 75, Art: GarysCatch },
+  'boardwalk-bins': { w: 100, h: 80, Art: BoardwalkBins },
+  'breeze-1': { w: 100, h: 133, Art: SeaBreeze },
+  'breeze-2': { w: 100, h: 133, Art: SeaBreeze },
+  'breeze-3': { w: 100, h: 133, Art: SeaBreeze },
+  'breeze-4': { w: 100, h: 133, Art: SeaBreeze },
+  'breeze-5': { w: 100, h: 133, Art: SeaBreeze },
+  'umbrella-1': { w: 100, h: 78, Art: Umbrella },
+  'umbrella-2': { w: 100, h: 78, Art: Umbrella },
+  'umbrella-3': { w: 100, h: 78, Art: Umbrella },
+  'umbrella-4': { w: 100, h: 78, Art: Umbrella },
+  'windbreak-1': { w: 100, h: 31, Art: Windbreak },
+  'windbreak-2': { w: 100, h: 31, Art: Windbreak },
+  rowboat: { w: 100, h: 50, Art: Rowboat },
+  'lifeguard-tower': { w: 100, h: 138, Art: LifeguardTower },
+  sandcastle: { w: 100, h: 83, Art: Sandcastle },
+  'beach-ball': { w: 100, h: 100, Art: BeachBall },
+  'spade-bucket': { w: 100, h: 100, Art: SpadeBucket },
+  kite: { w: 100, h: 109, Art: Kite },
+  radio: { w: 100, h: 82, Art: BeachRadio },
+  'pier-gate': { w: 100, h: 78, Art: FalseDoor },
+  'dune-path': { w: 100, h: 100, Art: DunePath },
+  'lifeguard-ramp': { w: 100, h: 114, Art: LifeguardRamp },
 };
 
 /** Anything a level hasn't drawn yet still reads as what it does. */

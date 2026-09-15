@@ -24,10 +24,15 @@ export interface Rect {
 }
 
 /**
- * What the room is made of, so the art knows whether to lay down grass or a
- * floor. Rooms default to 'yard'.
+ * What the room is made of, so the art knows whether to lay down grass, a floor
+ * or sand. Rooms default to 'yard'.
+ *
+ * It decides more than the colour: 'yard' gets fences down both sides and a
+ * patio at the entrance, 'indoor' gets boards and neither, and 'beach' gets the
+ * sea down one side and no fences at all — which is the whole point of the
+ * beach, because a room with no edges to hide behind plays differently.
  */
-export type SceneryKind = 'yard' | 'indoor';
+export type SceneryKind = 'yard' | 'indoor' | 'beach';
 
 /**
  * Which end of the room the way out is at.

@@ -37,6 +37,10 @@ const TUFT = 'M -4 0 C -5 -5 -5 -8 -3 -11 M 0 0 C 0 -6 0 -9 1 -13 M 4 0 C 5 -5 5
 const TUFT_WIDE =
   'M -6 0 C -8 -4 -8 -7 -6 -10 M -2 0 C -2 -6 -2 -9 -1 -12 M 3 0 C 4 -5 5 -8 7 -11 M 7 0 C 9 -4 10 -6 12 -8';
 const CLOVER = 'M 0 0 m -3 -3 a 3 3 0 1 0 6 0 a 3 3 0 1 0 -6 0';
+/** A scallop shell, for the sand. Small enough that the ribs are the whole read. */
+const SHELL =
+  'M 0 2 C -6 2 -8 -2 -7 -5 C -5 -9 -3 -10 0 -10 C 3 -10 5 -9 7 -5 C 8 -2 6 2 0 2 Z M 0 2 L 0 -9 M -3 1 L -4 -8 M 3 1 L 4 -8';
+
 
 interface GroundProps {
   level: LevelSpec;
@@ -64,9 +68,16 @@ export const Ground = React.memo(function Ground({ level, width, height, scale }
   const roomWidth = WORLD_WIDTH * scale;
 
   const indoors = kind === 'indoor';
-  const near = indoors ? art.floor : art.grass;
-  const far = indoors ? lighten(art.floor, 0.12) : lighten(art.grass, 0.14);
-  const band = indoors ? lighten(art.floor, 0.06) : art.grassMown;
+  const beach = kind === 'beach';
+  /** Grass, boards and fences are all 'the yard'; sand is its own thing. */
+  const outdoors = !indoors && !beach;
+  const near = indoors ? art.floor : beach ? art.sand : art.grass;
+  const far = indoors
+    ? lighten(art.floor, 0.12)
+    : beach
+      ? lighten(art.sand, 0.06)
+      : lighten(art.grass, 0.14);
+  const band = indoors ? lighten(art.floor, 0.06) : beach ? darken(art.sand, 0.04) : art.grassMown;
 
   // Mown stripes / floorboards, every 24 world units up the room.
   const bands: React.ReactElement[] = [];
@@ -126,9 +137,77 @@ export const Ground = React.memo(function Ground({ level, width, height, scale }
     }
   }
 
-  // Scatter, stable from the index: tufts, the odd clover, the odd dandelion.
+  /*
+   * Sand: the tide lines, and shells.
+   *
+   * The tide lines matter more than they look. Dry sand is a flat wash with
+   * nothing in it to judge distance by, so a tall beach reads as a void; a few
+   * long, very shallow curves parallel to the water give the eye something to
+   * measure against, which is the job the mown stripes do in the yard and the
+   * boards do indoors.
+   */
+  const tide: React.ReactElement[] = [];
+  if (beach) {
+    const count = Math.round(level.height / 90);
+    for (let i = 0; i < count; i++) {
+      const wy = (i + 0.4) * (level.height / count);
+      const reach = 16 + hash01(i * 7.3) * 26;
+      tide.push(
+        <Path
+          key={`tide-${i}`}
+          path={path(
+            `M ${7 * scale} ${toY(wy)} q ${reach * 0.5 * scale} ${-7 * scale} ${reach * scale} ${
+              -1 * scale
+            }`
+          )}
+          color={art.sandWet}
+          style="stroke"
+          strokeWidth={Math.max(1.5, 2.2 * scale)}
+          opacity={0.45}
+        />
+      );
+    }
+  }
+
+  // Scatter, stable from the index: tufts, the odd clover, the odd dandelion —
+  // or, on sand, shells and pebbles.
   const scatter: React.ReactElement[] = [];
-  if (!indoors) {
+  if (beach) {
+    const count = Math.round(level.height / 9);
+    for (let i = 0; i < count; i++) {
+      const wx = 9 + hash01(i * 2.1) * (WORLD_WIDTH - 12);
+      const wy = hash01(i * 5.7 + 3) * level.height;
+      const roll = hash01(i * 9.3);
+      const r = (0.5 + hash01(i * 3.3) * 0.7) * scale;
+      scatter.push(
+        roll > 0.82 ? (
+          <Path
+            key={`shell-${i}`}
+            path={path(SHELL)}
+            color={roll > 0.93 ? palette.white : art.shell}
+            transform={
+              [
+                { translateX: wx * scale },
+                { translateY: toY(wy) },
+                { scale: r * 0.9 },
+                { rotate: roll * 6 },
+              ] as Transforms3d
+            }
+            opacity={0.9}
+          />
+        ) : (
+          <Circle
+            key={`pebble-${i}`}
+            cx={wx * scale}
+            cy={toY(wy)}
+            r={r * 0.7}
+            color={art.shell}
+            opacity={0.35 + roll * 0.3}
+          />
+        )
+      );
+    }
+  } else if (!indoors) {
     const count = Math.round(level.height / 6);
     for (let i = 0; i < count; i++) {
       const wx = 2 + hash01(i * 2.1) * (WORLD_WIDTH - 4);
@@ -197,11 +276,15 @@ export const Ground = React.memo(function Ground({ level, width, height, scale }
       </Rect>
       {bands}
       {boards}
+      {tide}
       {dapples}
       {scatter}
 
+      {/* the sea down the left-hand side, and the foam where it arrives */}
+      {beach ? <SeaEdge height={level.height} scale={scale} toY={toY} /> : null}
+
       {/* the patio you come in on */}
-      {!indoors ? (
+      {outdoors ? (
         <Group>
           <Rect x={0} y={toY(26)} width={roomWidth} height={26 * scale}>
             <LinearGradient
@@ -227,8 +310,14 @@ export const Ground = React.memo(function Ground({ level, width, height, scale }
         </Group>
       ) : null}
 
-      {/* the fences down both sides, so the room reads as a room */}
-      {!indoors ? (
+      {/*
+        Fences down both sides, so the room reads as a room.
+
+        The beach gets none, and that is the level design rather than an
+        omission: a beach with a fence round it is not a beach, and a room with
+        nothing to put your back against is the whole idea of room five.
+      */}
+      {outdoors ? (
         <Group>
           <SideFence x={0} height={level.height} scale={scale} toY={toY} castRight />
           <SideFence x={(WORLD_WIDTH - 4) * scale} height={level.height} scale={scale} toY={toY} />
@@ -237,6 +326,67 @@ export const Ground = React.memo(function Ground({ level, width, height, scale }
     </Group>
   );
 });
+
+/**
+ * The sea, down the left-hand edge of a beach room.
+ *
+ * Static, like everything else in `Ground` — it is memoised and the camera
+ * slides it, so nothing in here may move. The water reads as water from the
+ * gradient and the foam line alone, which is enough at this size: an animated
+ * shoreline would cost a redraw of the whole ground every frame to sell
+ * something the player never looks directly at.
+ */
+function SeaEdge({
+  height,
+  scale,
+  toY,
+}: {
+  height: number;
+  scale: number;
+  toY: (n: number) => number;
+}) {
+  const w = 7 * scale;
+  const top = toY(height);
+  const tall = height * scale;
+  /** A foam line that wanders, so the shore is not a ruled edge. */
+  let foam = `M ${w} ${toY(0)}`;
+  const steps = Math.max(4, Math.round(height / 40));
+  for (let i = 1; i <= steps; i++) {
+    const y = (height * i) / steps;
+    const bulge = (hash01(i * 3.7) - 0.5) * 3.4;
+    foam += ` Q ${(7 + bulge) * scale} ${toY(y - height / steps / 2)} ${
+      (7 + (hash01(i * 5.1) - 0.5) * 2.6) * scale
+    } ${toY(y)}`;
+  }
+
+  return (
+    <Group>
+      <Rect x={-w * 2} y={top} width={w * 3} height={tall}>
+        <LinearGradient
+          start={vec(-w * 2, 0)}
+          end={vec(w, 0)}
+          colors={[art.deep, art.shallow]}
+          positions={[0, 1]}
+        />
+      </Rect>
+      {/* wet sand, where the water has just been */}
+      <Rect x={w} y={top} width={3.4 * scale} height={tall} color={art.sandWet} opacity={0.55} />
+      <Path
+        path={path(foam)}
+        color={art.foam}
+        style="stroke"
+        strokeWidth={Math.max(2, 2.6 * scale)}
+      />
+      <Path
+        path={path(foam)}
+        color={art.shallow}
+        style="stroke"
+        strokeWidth={Math.max(1, 1.2 * scale)}
+        opacity={0.6}
+      />
+    </Group>
+  );
+}
 
 /**
  * A run of fence: a dark rail behind, pickets over it, and — on the left, where

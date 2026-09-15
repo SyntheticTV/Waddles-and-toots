@@ -120,6 +120,15 @@ const CAST_BY_ID = {
    */
   'sunrise-yoga--tea-urn': 'Laomedeia',
 
+  /*
+   * Room five drew three collisions out of eight, which is about what eight
+   * lines out of a fifteen-voice pool should do. Pinned so the beach sounds like
+   * eight different people rather than five.
+   */
+  'sunset-beach--sunscreen': 'Achird',
+  'sunset-beach--old-cooler': 'Autonoe',
+  'sunset-beach--boardwalk-bins': 'Erinome',
+
   'decoy-1': 'Iapetus',
   'decoy-2': 'Iapetus',
   'decoy-cat': 'Iapetus',
@@ -344,6 +353,27 @@ if (DRY_RUN) {
 }
 
 if (PLAN_TO) {
+  /*
+   * Clear out the recordings this plan supersedes, before handing it over.
+   *
+   * We know which lines changed — the stamps say so — but the tool on the other
+   * end is a simple one that skips anything already on disk. Without this, a line
+   * that has been *re-cast* is quietly skipped and keeps the old voice: the text
+   * is the same and the file is there, so nothing looks wrong. That has now
+   * happened twice, both times silently, and both times the fix was to delete one
+   * file by hand and run it again.
+   */
+  let cleared = 0;
+  for (const line of todo) {
+    const stale = path.join(OUT_DIR, `${line.id}.mp3`);
+    if (fs.existsSync(stale)) {
+      fs.rmSync(stale);
+      cleared++;
+    }
+  }
+  if (cleared) console.log(`
+cleared ${cleared} recording(s) whose text or casting changed`);
+
   // Hand the whole job to another tool — one that already holds the credentials
   // — rather than asking for them here. It writes the mp3s; we own the casting.
   fs.writeFileSync(

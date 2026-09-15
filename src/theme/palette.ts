@@ -53,6 +53,18 @@ export const art = {
   soil: '#CBB68E',
   /** Indoors: a warm board floor, kept pale so the stink green still reads. */
   floor: '#E3D4BC',
+  /**
+   * The beach. Dry sand is barely darker than the paper the game is drawn on,
+   * which is deliberate — the stink green has to read on top of it, and a
+   * saturated golden sand turns every green cloud to mud.
+   */
+  sand: '#EFE0C2',
+  sandWet: '#D6C4A2',
+  shell: '#C6B291',
+  /** The water, and the foam where it meets the sand. */
+  shallow: '#A8D3D8',
+  deep: '#6FAFBC',
+  foam: '#F4FBFA',
   patio: '#E7E0CE',
   patioLine: '#D2C9B2',
 
@@ -130,6 +142,15 @@ export const localCoat = {
   hamster: { lit: '#E4BC78', mid: '#CDA057', deep: '#A87F3C', line: '#5F4620' },
   /** Sunrise Yoga — the studio rabbit, who is better at this than anybody. */
   rabbit: { lit: '#E8E0D2', mid: '#D2C7B4', deep: '#AEA292', line: '#574F44' },
+  /**
+   * Sunset Beach — the otter off the end of the jetty.
+   *
+   * The design doc said a dolphin, and a dolphin would be better if the locals
+   * had their own silhouettes; they do not yet, so a dolphin would come out as a
+   * blue-grey squirrel. An otter is the animal that belongs on that shoreline
+   * *and* survives the shared shape.
+   */
+  otter: { lit: '#9C7B5A', mid: '#7C5E42', deep: '#58412C', line: '#2E2317' },
   /** Firehouse kitchen, when it exists. */
   dalmatian: { lit: '#FBF6EA', mid: '#EDE6D6', deep: '#CFC6B2', line: '#3A3A3A' },
   /** Petting zoo, when it exists. */
