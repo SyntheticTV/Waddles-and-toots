@@ -39,7 +39,15 @@ export const sunriseYoga: LevelSpec = {
    */
   exit: { x: 38, y: 0, width: 22, height: 14 },
 
-  local: { species: 'cat', at: { x: 12, y: 227 } },
+  /*
+   * The studio rabbit, who is better at this than anybody in the room.
+   *
+   * Not a cat, which is what this was first: Fluffy is the cat, and §7's gag is
+   * the room deciding it was "the CAT". A second one across the floor muddies
+   * the joke the whole decoy is built on — and 'cat' was not in the coat table
+   * either, so it was quietly being drawn as a squirrel.
+   */
+  local: { species: 'rabbit', at: { x: 12, y: 227 } },
 
   props: [
     // --- a room full of people who are about to breathe in very deeply -----

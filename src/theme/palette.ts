@@ -102,3 +102,38 @@ export const coat = {
   tongue: '#C9707A',
   innerEar: '#C98A86',
 } as const;
+
+/**
+ * The animal who lives in each room (§9), by species.
+ *
+ * Here rather than in `art/characters` so a level can be checked against it
+ * without dragging Skia into the check — which matters, because a species with
+ * no entry does not fail, it silently comes out looking like a squirrel. That
+ * is exactly what happened to the yoga studio, and it went unnoticed because
+ * nothing anywhere said the name was wrong.
+ *
+ * **The local is always an animal, and always one that belongs in the room.**
+ * The crowd is drawn by `Person` and the local by `Local`; they are different
+ * components and a person can never turn up as the local. Adding a room means
+ * adding its animal here.
+ *
+ * None of them may be a cat. Fluffy is the cat, and §7's whole gag is the room
+ * deciding it was "the CAT" — a second cat across the room muddies the one joke
+ * the decoy is built on.
+ */
+export const localCoat = {
+  /** Backyard BBQ. */
+  squirrel: coat.squirrel,
+  /** Fine Restaurant — a kitchen mouse. */
+  mouse: { lit: '#C8BFB3', mid: '#AAA095', deep: '#877D72', line: '#4F4841' },
+  /** School Hallway — the classroom hamster, escaped again. */
+  hamster: { lit: '#E4BC78', mid: '#CDA057', deep: '#A87F3C', line: '#5F4620' },
+  /** Sunrise Yoga — the studio rabbit, who is better at this than anybody. */
+  rabbit: { lit: '#E8E0D2', mid: '#D2C7B4', deep: '#AEA292', line: '#574F44' },
+  /** Firehouse kitchen, when it exists. */
+  dalmatian: { lit: '#FBF6EA', mid: '#EDE6D6', deep: '#CFC6B2', line: '#3A3A3A' },
+  /** Petting zoo, when it exists. */
+  goat: { lit: '#EEE6D3', mid: '#DCD2BA', deep: '#BCB098', line: '#5A5243' },
+} as const;
+
+export type LocalSpecies = keyof typeof localCoat;

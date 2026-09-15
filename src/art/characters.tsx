@@ -19,7 +19,7 @@ import React from 'react';
 import { Circle, Group, Path, type Transforms3d } from '@shopify/react-native-skia';
 
 import type { Vec2 } from '../game/types';
-import { art, coat, palette } from '../theme/palette';
+import { art, coat, localCoat, palette } from '../theme/palette';
 import { OUTLINE, OUTLINE_FINE, blinking, clamp, hash01, path, stand, wobble } from './ink';
 import { Brow, Cel, Eye, Flat, Form, Fur, Ink, Sheen, Stroke, darken, lighten } from './shading';
 
@@ -1032,18 +1032,15 @@ const L_TAIL_FUR = [
 ];
 
 /**
- * Fur for each room's local (§9). Only the squirrel has its own silhouette so
- * far; the rest borrow it in different colours, which is honest placeholder art
- * until their rooms exist. A new species is one entry here, plus its own paths
- * above if it needs a different shape.
+ * Fur for each room's local (§9), from the palette — see `localCoat` there for
+ * why it lives in a file a test can read.
+ *
+ * Only the squirrel has its own silhouette so far; the rest borrow it in
+ * different colours, which is honest placeholder art until their rooms exist. A
+ * new species is one entry in `localCoat`, plus its own paths above if it needs
+ * a different shape.
  */
-const FUR: Record<string, { lit: string; mid: string; deep: string; line: string }> = {
-  squirrel: coat.squirrel,
-  mouse: { lit: '#C8BFB3', mid: '#AAA095', deep: '#877D72', line: '#4F4841' },
-  hamster: { lit: '#E4BC78', mid: '#CDA057', deep: '#A87F3C', line: '#5F4620' },
-  dalmatian: { lit: '#FBF6EA', mid: '#EDE6D6', deep: '#CFC6B2', line: '#3A3A3A' },
-  goat: { lit: '#EEE6D3', mid: '#DCD2BA', deep: '#BCB098', line: '#5A5243' },
-};
+const FUR: Record<string, { lit: string; mid: string; deep: string; line: string }> = localCoat;
 
 /**
  * The animal who lives here. The mood the engine hands down does all the acting:

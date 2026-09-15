@@ -456,8 +456,28 @@ is longer than the room is tall, and **where the last fish leaves you standing i
 now a design decision**: weight the fish to the wrong end and the gate unlocks
 with the whole room between the group and the door.
 
+**Losing a run to a wrong guess is acceptable.** A room whose answer you only
+learn by walking it is a room you may have to play twice, and that is the
+intended cost — the second attempt is not a punishment, it is the level being
+understood. So the wrong end stays expensive, and none of the tuning should be
+softened to rescue a first-time player who ignores the animal and the nose. What
+is *not* acceptable is a room where the answer cannot be learned at all: hence
+fresh air at both ends, so the nose can always be cleared.
+
 Later rooms will widen and put doors on the sides as well. Not yet — the width is
 still fixed at `WORLD_WIDTH`.
+
+### The local is always an animal
+
+Never a person. The crowd is drawn by `Person` and the local by `Local` — two
+different components — so a local cannot be one of the people in the room, by
+construction. Every room's local is an animal that belongs in *that* room: the
+backyard squirrel, the kitchen mouse, the classroom hamster, the yoga studio's
+rabbit.
+
+They are also never a cat. Fluffy is the cat, and §7's gag is the room deciding
+it was "the CAT"; a second cat across the floor muddies the one joke the decoy is
+built on.
 
 ### Level authoring checklist
 
