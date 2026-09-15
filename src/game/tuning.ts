@@ -120,6 +120,20 @@ export const CAMERA_ZOOM_IN_EASE = 0.07;
 /** Where Waddles sits on screen: a third up from the bottom, centred across. */
 export const CAMERA_LOOK_AHEAD = 0.34;
 
+/**
+ * How often the scenery's own animation advances, in frames per second.
+ *
+ * Props stand still; the only thing that changes about them between frames is
+ * the wisps coming off the smelly ones. Stepping their clock lets the whole prop
+ * layer be skipped most frames — it was a quarter of the work in every frame,
+ * spent nudging smoke.
+ *
+ * Twelve is the traditional limited-animation rate and it is the same rule the
+ * dog's head already follows, snapping between two drawings rather than blending
+ * through the middle. It is a look, not a compromise.
+ */
+export const PROP_ANIM_FPS = 12;
+
 // -------------------------------------------------------------- movement
 
 /** Waddling. World units per second. */

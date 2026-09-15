@@ -151,6 +151,8 @@ export const localCoat = {
    * *and* survives the shared shape.
    */
   otter: { lit: '#9C7B5A', mid: '#7C5E42', deep: '#58412C', line: '#2E2317' },
+  /** Big Save Grocery — somebody's ferret, loose since the pet aisle incident. */
+  ferret: { lit: '#E6D8BE', mid: '#C2AE8C', deep: '#8E7B5C', line: '#4A3E2A' },
   /** Firehouse kitchen, when it exists. */
   dalmatian: { lit: '#FBF6EA', mid: '#EDE6D6', deep: '#CFC6B2', line: '#3A3A3A' },
   /** Petting zoo, when it exists. */

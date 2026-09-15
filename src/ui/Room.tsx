@@ -32,6 +32,7 @@ import { exitFacesUp } from '../game/types';
 import { hazeOpacity, huntHeat, stageFor } from '../game/stink';
 import {
   CAMERA_LOOK_AHEAD,
+  PROP_ANIM_FPS,
   HUNT_RADIUS,
   CAMERA_NEAR_ZOOM,
   CAMERA_WIDE_ZOOM,
@@ -65,6 +66,44 @@ const SIZE = {
   local: 10,
   person: 14.5,
 };
+
+/**
+ * Everything in the room that does not move: the props, drawn once and then left
+ * alone until the stepped clock ticks.
+ *
+ * Memoised on the level, the camera scale and that clock — which is the whole
+ * point. At sixty frames a second this was a quarter of the work in a frame,
+ * every frame, for scenery that is standing still.
+ */
+const PropLayer = React.memo(function PropLayer({
+  level,
+  scale,
+  height,
+  t,
+}: {
+  level: RunState['level'];
+  scale: number;
+  height: number;
+  t: number;
+}) {
+  const roomX = (worldX: number) => worldX * scale;
+  const roomY = (worldY: number) => height - worldY * scale;
+  return (
+    <Group>
+      {level.props.map((p) => (
+        <PropArt
+          key={p.id}
+          prop={p}
+          x={roomX(p.bounds.x)}
+          y={roomY(p.bounds.y + p.bounds.height)}
+          w={p.bounds.width * scale}
+          h={p.bounds.height * scale}
+          t={t}
+        />
+      ))}
+    </Group>
+  );
+});
 
 export function Room({ run, width, height }: Props) {
   // The gate swings rather than snapping, and the camera pulls back rather than
@@ -124,6 +163,22 @@ export function Room({ run, width, height }: Props) {
   const toScreenX = (worldX: number) => roomX(worldX) - cameraX * scale;
   const screenY = (worldY: number) => roomY(worldY) + camera * scale;
 
+  /*
+   * The clock the props run on, stepped rather than continuous.
+   *
+   * Props never move — their positions are fixed in room coordinates and the
+   * camera slides the whole layer — so the only thing that changes about them
+   * frame to frame is `t`, for the whiffs coming off them. Handing them a
+   * continuous `t` meant rebuilding several hundred Skia nodes sixty times a
+   * second to nudge a few wisps of smoke; stepping it lets `PropLayer` skip the
+   * lot most frames.
+   *
+   * Limited animation is the house style anyway — the dog's head snaps between
+   * two drawings rather than blending — so wisps at PROP_ANIM_FPS is not a
+   * compromise, it is the same rule applied to the scenery.
+   */
+  const propT = Math.round(t * PROP_ANIM_FPS) / PROP_ANIM_FPS;
+
   const haze = hazeOpacity(run.stink);
   const stage = stageFor(run.stink);
   const nose = readNose(run);
@@ -153,6 +208,18 @@ export function Room({ run, width, height }: Props) {
   const clearY = screenY((run.waddles.y + tail.y) / 2);
   const clearR =
     (Math.hypot(run.waddles.x - tail.x, run.waddles.y - tail.y) / 2 + 15) * scale;
+  /*
+   * How far the haze has to reach to cover the corners from wherever the group
+   * is standing, and where in that reach the clear patch ends. Both are needed
+   * because the gradient now does the hole itself.
+   */
+  const hazeReach = Math.max(
+    Math.hypot(clearX, clearY),
+    Math.hypot(width - clearX, clearY),
+    Math.hypot(clearX, height - clearY),
+    Math.hypot(width - clearX, height - clearY)
+  );
+  const clearStop = Math.min(0.6, clearR / Math.max(1, hazeReach));
 
   return (
     <Canvas style={{ width, height }}>
@@ -164,17 +231,7 @@ export function Room({ run, width, height }: Props) {
       >
         <Ground level={run.level} width={width} height={height} scale={scale} />
 
-        {run.level.props.map((p) => (
-          <PropArt
-            key={p.id}
-            prop={p}
-            x={roomX(p.bounds.x)}
-            y={roomY(p.bounds.y + p.bounds.height)}
-            w={p.bounds.width * scale}
-            h={p.bounds.height * scale}
-            t={t}
-          />
-        ))}
+        <PropLayer level={run.level} scale={scale} height={height} t={propT} />
 
         <ExitGate
           exit={run.level.exit}
@@ -248,50 +305,52 @@ export function Room({ run, width, height }: Props) {
       <Vignette width={width} height={height} />
 
       {/* ------------------------------------------------------- the haze */}
+      {/*
+        One rectangle and one shader. No offscreen layer.
+
+        This used to be a `<Group layer>` with the clear patch punched through it
+        by a `dstOut` circle, which is the obvious way to write it and the
+        expensive way to run it: `layer` allocates an offscreen surface the size
+        of the canvas and composites it, every frame. Worse, it only existed once
+        the meter had started climbing — so a round began smooth and got heavy
+        exactly as the room got bad, which is the worst possible time for the
+        frame rate to go.
+
+        Expressing the hole *as part of the gradient* gets the same picture out of
+        a single draw. The haze is now thickest furthest from the group rather
+        than thickest at the top, which is also the correction this needed
+        anyway: "thickest where the exit is" stopped being true the moment a room
+        could put its way out at either end (§10).
+      */}
       {haze > 0.01 ? (
-        <Group layer>
-          <Rect x={0} y={0} width={width} height={height}>
-            <LinearGradient
-              start={vec(0, 0)}
-              end={vec(0, height)}
-              colors={[
-                withAlpha(palette.stink, haze),
-                withAlpha(palette.stink, haze * 0.55),
-                withAlpha(palette.stink, haze * 0.12),
-              ]}
-              positions={[0, 0.55, 1]}
-            />
-          </Rect>
-
-          {/* clouds rolling in at the top, where the exit is */}
-          {stage === 'panic'
-            ? [0, 1, 2].map((i) => (
-                <Poof
-                  key={`drift-${i}`}
-                  x={width * (0.2 + i * 0.3) + wobble(t, 0.5 + i * 0.2, width * 0.06, i)}
-                  y={height * (0.07 + i * 0.05) + wobble(t, 0.7, 8, i * 2)}
-                  age={0}
-                  scale={scale * (2.6 + i * 0.5)}
-                  strength={0.45}
-                />
-              ))
-            : null}
-
-          {/*
-            The haze obscures distance, never the player (§5). This punches a soft
-            hole in the layer around the group, so however bad the room gets you
-            can always see your own four animals.
-          */}
-          <Circle cx={clearX} cy={clearY} r={clearR} blendMode="dstOut">
-            <RadialGradient
-              c={vec(clearX, clearY)}
-              r={clearR}
-              colors={['#000000D9', '#000000B3', '#00000000']}
-              positions={[0, 0.4, 1]}
-            />
-          </Circle>
-        </Group>
+        <Rect x={0} y={0} width={width} height={height}>
+          <RadialGradient
+            c={vec(clearX, clearY)}
+            r={hazeReach}
+            colors={[
+              withAlpha(palette.stink, 0),
+              withAlpha(palette.stink, 0),
+              withAlpha(palette.stink, haze * 0.72),
+              withAlpha(palette.stink, haze),
+            ]}
+            positions={[0, clearStop, Math.min(0.94, clearStop + 0.34), 1]}
+          />
+        </Rect>
       ) : null}
+
+      {/* clouds rolling in from the far end, once it is really bad */}
+      {haze > 0.01 && stage === 'panic'
+        ? [0, 1, 2].map((i) => (
+            <Poof
+              key={`drift-${i}`}
+              x={width * (0.2 + i * 0.3) + wobble(t, 0.5 + i * 0.2, width * 0.06, i)}
+              y={height * (0.07 + i * 0.05) + wobble(t, 0.7, 8, i * 2)}
+              age={0}
+              scale={scale * (2.6 + i * 0.5)}
+              strength={0.45}
+            />
+          ))
+        : null}
     </Canvas>
   );
 }

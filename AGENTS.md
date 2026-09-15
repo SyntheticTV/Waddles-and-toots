@@ -89,6 +89,24 @@ sits on that side, every shadow falls to the lower right. It is the single rule
 that makes a penguin, a grill and a shed look like they are in the same yard, so
 don't light one thing differently because it looks nicer alone.
 
+**Never use `<Group layer>` in the room.** It allocates an offscreen surface the
+size of the canvas and composites it, every frame, and it is the single most
+expensive thing available here. The haze was written that way — a full-screen
+green rectangle with the clear patch punched through it by a `dstOut` circle,
+which is the obvious way to express it — and because it only existed once the
+meter started climbing, a round began smooth and got heavy exactly as the room
+got bad. Express the hole *as part of the gradient* instead and the same picture
+comes out of one draw. If something seems to need a layer, it usually needs a
+better shader.
+
+**Props are on a stepped clock.** They never move — their positions are fixed in
+room coordinates and the camera slides the whole layer — so the only thing that
+changes about them frame to frame is the wisps coming off the smelly ones.
+`PropLayer` is memoised on `PROP_ANIM_FPS`-quantised time, which lets a frame
+skip the lot: it was a quarter to a third of the work in every frame, spent
+nudging smoke. Anything else added to the room that stands still belongs in that
+layer, not beside it.
+
 Gradients cost a shader per frame, so `Form` is for the big masses only — a body,
 a head, a lid — and everything smaller uses `Cel` or a flat fill. If a busy room
 ever drops frames, the static scenery is the thing to bake into a Skia `Picture`;
