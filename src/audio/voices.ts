@@ -33,7 +33,15 @@ import { SCREAM_MS, SCREAMS } from './library';
 import { CAUGHT, DECOY_PAYOFF, NOTICED, PANIC, TOOT_REACTIONS } from './lines';
 import { clipFor } from './voiceClips';
 
-/** Louder, later, more urgent: a bigger number talks over a smaller one. */
+/**
+ * Who goes next when two people want to speak.
+ *
+ * Nobody ever talks *over* anybody: a line in progress is always allowed to
+ * finish. Priority no longer decides who interrupts — it decides who gets the
+ * channel next, which is a different and much better-behaved rule. Two voices at
+ * once is unintelligible, and in a game where the jokes *are* the content,
+ * losing half of two lines is worse than hearing one of them a beat late.
+ */
 const PRIORITY = {
   sniff: 1,
   blame: 2,
@@ -52,8 +60,26 @@ const PRIORITY = {
 
 type LineKind = keyof typeof PRIORITY;
 
-/** Nothing new within this of the last line, unless it outranks it. */
+/** Nothing new within this of the last line. */
 const MIN_GAP_MS = 900;
+
+/**
+ * The beat between one person finishing and the next one starting.
+ *
+ * Shorter than `MIN_GAP_MS`, because that gap is there to stop the room
+ * gabbling at a player who is standing still, and this one only has to read as a
+ * second person rather than the same person carrying on.
+ */
+const QUEUE_GAP_MS = 420;
+
+/**
+ * How long a line will wait its turn before giving up.
+ *
+ * A queue with no expiry is how you end up hearing about the potato salad twenty
+ * seconds after anybody cared — the thing the old cut-in rule existed to
+ * prevent. Waiting is fine; arriving after its moment is not.
+ */
+const LINE_WAIT_MS = 2600;
 
 /** The beat before the joke lands. §7. */
 const DECOY_PAYOFF_MS = 900;
@@ -98,6 +124,15 @@ let speakingPriority = 0;
 let lastSpokeAt = 0;
 let rotation = 0;
 let payoffTimer: ReturnType<typeof setTimeout> | null = null;
+let queueTimer: ReturnType<typeof setTimeout> | null = null;
+/**
+ * The one line waiting its turn.
+ *
+ * Exactly one, not a list. A backlog is its own failure — the room would spend a
+ * quiet moment reciting everything it thought of while it was busy — so a new
+ * arrival either outranks whoever is waiting and replaces them, or is dropped.
+ */
+let pending: { priority: number; at: number; run: () => void } | null = null;
 let tootTimer: ReturnType<typeof setTimeout> | null = null;
 let screamTimer: ReturnType<typeof setTimeout> | null = null;
 let watchdog: ReturnType<typeof setTimeout> | null = null;
@@ -132,6 +167,17 @@ const dealToot = dealer(TOOT_REACTIONS);
 const dealScream = dealer(SCREAMS);
 let tootsUntilScream = SCREAM_EVERY[0];
 
+/**
+ * Hold a line back until the channel is free, or decide it is not worth it.
+ *
+ * Ties go to whoever asked first, so a room full of people muttering does not
+ * keep shuffling its own queue.
+ */
+function remember(priority: number, run: () => void): void {
+  if (pending && pending.priority >= priority) return;
+  pending = { priority, at: Date.now(), run };
+}
+
 function finished(): void {
   if (watchdog) {
     clearTimeout(watchdog);
@@ -140,6 +186,17 @@ function finished(): void {
   speaking = false;
   speakingPriority = 0;
   duckMusic(false);
+
+  // Whoever was waiting gets their turn, after a beat.
+  const next = pending;
+  pending = null;
+  if (!next) return;
+  if (Date.now() - next.at > LINE_WAIT_MS) return;
+  if (queueTimer) clearTimeout(queueTimer);
+  queueTimer = setTimeout(() => {
+    queueTimer = null;
+    next.run();
+  }, QUEUE_GAP_MS);
 }
 
 /**
@@ -149,7 +206,7 @@ function finished(): void {
  * room reacting out loud — it is not a sound effect that happens to be a person,
  * and it must not land on top of a punchline.
  */
-function claim(priority: number): boolean {
+function claim(priority: number, queued = false): boolean {
   const settings = getSettings();
   // Voices sit under the sound switch: turning sound off should make the game
   // quiet, not quiet-except-for-the-talking.
@@ -157,19 +214,23 @@ function claim(priority: number): boolean {
 
   const now = Date.now();
 
-  if (speaking) {
-    // Only something more urgent gets to cut in.
-    if (priority <= speakingPriority) return false;
-    Speech.stop().catch(() => {});
-    stopVoiceClips();
-  } else if (now - lastSpokeAt < MIN_GAP_MS && priority < PRIORITY.panic) {
-    return false;
-  }
+  // Somebody is talking. Nothing cuts in — not panic, not being caught.
+  if (speaking) return false;
+  /*
+   * And somebody is already waiting in the gap between two lines, so nothing
+   * jumps in front of them either. Without this, a line arriving during that
+   * beat takes the channel and the one that had been waiting is dropped when its
+   * turn finally comes — queue-jumping, which is the same rudeness by a
+   * different route.
+   */
+  if (!queued && queueTimer) return false;
+  // A line that has already waited its turn has served the gap.
+  if (!queued && now - lastSpokeAt < MIN_GAP_MS) return false;
 
   /*
-   * A scream holds the channel on a timer of its own. If something has just cut
-   * in over one, that timer is now counting down to release *this* line's
-   * channel instead — so it goes before the new occupant moves in.
+   * A scream holds the channel on a timer of its own, and a stale one would
+   * count down to release *this* line's channel instead — so it goes before the
+   * new occupant moves in.
    */
   if (screamTimer) {
     clearTimeout(screamTimer);
@@ -191,8 +252,13 @@ function claim(priority: number): boolean {
  * Says a line, or decides not to. Everything funnels through here so there is
  * exactly one place that knows about queueing, priority and the switches.
  */
-function say(text: string, kind: LineKind, then?: () => void): void {
-  if (!claim(PRIORITY[kind])) return;
+function say(text: string, kind: LineKind, then?: () => void, queued = false): void {
+  if (!claim(PRIORITY[kind], queued)) {
+    // Wait for a gap rather than talking over them — but only one attempt, so a
+    // line that still cannot get in when its turn comes is simply late news.
+    if (!queued) remember(PRIORITY[kind], () => say(text, kind, then, true));
+    return;
+  }
 
   const done = () => {
     finished();
@@ -286,7 +352,18 @@ export function reactToToot(): void {
     }
     // A scream holds the channel for its own length: nothing knows when a
     // one-shot finished, and there is no callback to wait on.
-    if (!claim(PRIORITY.toot)) return;
+    if (!claim(PRIORITY.toot)) {
+      remember(PRIORITY.toot, () => {
+        if (!claim(PRIORITY.toot, true)) return;
+        playSound(scream as (typeof SCREAMS)[number]);
+        if (screamTimer) clearTimeout(screamTimer);
+        screamTimer = setTimeout(() => {
+          screamTimer = null;
+          finished();
+        }, SCREAM_MS);
+      });
+      return;
+    }
     playSound(scream as (typeof SCREAMS)[number]);
     if (screamTimer) clearTimeout(screamTimer);
     screamTimer = setTimeout(() => {
@@ -324,6 +401,16 @@ export function hushVoices(): void {
     clearTimeout(screamTimer);
     screamTimer = null;
   }
+  /*
+   * Drop whoever was waiting *before* handing the channel back — `finished` is
+   * what starts the next line, so clearing this afterwards meant leaving the
+   * room kicked off the very line it was supposed to cancel.
+   */
+  if (queueTimer) {
+    clearTimeout(queueTimer);
+    queueTimer = null;
+  }
+  pending = null;
   Speech.stop().catch(() => {});
   stopVoiceClips();
   finished();

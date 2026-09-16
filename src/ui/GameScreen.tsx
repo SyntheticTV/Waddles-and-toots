@@ -87,7 +87,9 @@ export function GameScreen({
     recordRun(level.id, {
       cleared: runRef.current.outcome === 'escaped',
       poofs: runRef.current.poofs,
-      seconds: runRef.current.elapsed / 1000,
+      // `elapsed` is already seconds; dividing again recorded every best time
+      // as a fortieth of a second.
+      seconds: runRef.current.elapsed,
     });
   }
 

@@ -118,6 +118,14 @@ export interface InputState {
 export interface RunState {
   level: LevelSpec;
   outcome: RunOutcome;
+  /**
+   * How long this run has been going, **in seconds**.
+   *
+   * `step` takes milliseconds and divides; everything stored on the run is
+   * seconds. Saying so here because it has now been misread twice — once by a
+   * cooldown that was written in milliseconds and so never expired, and once by
+   * a best-time that was divided by a thousand it had already been divided by.
+   */
   elapsed: number;
 
   waddles: Vec2;
@@ -151,6 +159,13 @@ export interface RunState {
    * §13's second star is crossing a room without a single one.
    */
   poofs: number;
+  /**
+   * When each blame prop was last accused, on the run's own clock.
+   *
+   * Keyed by prop id so it survives anything that reorders a level's props, and
+   * in seconds, because that is what `elapsed` is.
+   */
+  blamedAt: Record<string, number>;
   /** True once every nugget is in and the gate has swung open. §11. */
   gateOpen: boolean;
   /** Standing in the gateway. With the gate shut, that is worth saying out loud. */
@@ -236,6 +251,7 @@ export function createRun(level: LevelSpec, opts: CreateRunOptions = {}): RunSta
     nuggets: level.nuggets.map((pos) => ({ pos: { ...pos }, taken: false })),
     collected: 0,
     poofs: 0,
+    blamedAt: {},
     gateOpen: level.nuggets.length === 0,
     atExit: false,
 
@@ -658,12 +674,26 @@ function tickStink(s: RunState, dt: number): void {
     decoyHolding,
   });
 
-  // People start saying what they think it is.
+  /*
+   * People start saying what they think it is.
+   *
+   * A prop that has just been blamed goes quiet for a while, and the room picks
+   * the nearest one that has not. Without that, standing anywhere near the
+   * potato salad meant hearing about the potato salad every three seconds for
+   * the rest of the round — the same joke, on a loop, which is the fastest way
+   * to make the best writing in the game annoying.
+   *
+   * Passing over a prop on cooldown rather than simply going quiet is the better
+   * half of the rule: the room works *down* its shortlist. In a supermarket with
+   * eleven suspects that is the entire character of the level.
+   */
   if (!decoyHolding && !s.blame && stageFor(s.stink) === 'blame') {
     let nearest: Prop | null = null;
     let nearestD = Infinity;
     for (const prop of s.level.props) {
-      if (prop.kind !== 'blame') continue;
+      if (prop.kind !== 'blame' || !prop.blameLine) continue;
+      const said = s.blamedAt[prop.id];
+      if (said !== undefined && s.elapsed - said < T.BLAME_COOLDOWN_SECONDS) continue;
       const d = distToProp(s.waddles, prop);
       if (d < nearestD) {
         nearestD = d;
@@ -671,6 +701,7 @@ function tickStink(s: RunState, dt: number): void {
       }
     }
     if (nearest?.blameLine && nearestD < 46) {
+      s.blamedAt[nearest.id] = s.elapsed;
       s.blame = { text: nearest.blameLine, at: centerOf(nearest), leftMs: 3000 };
       s.events.push({ kind: 'blame', at: centerOf(nearest), text: nearest.blameLine });
     }

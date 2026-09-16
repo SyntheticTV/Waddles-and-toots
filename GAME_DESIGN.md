@@ -614,8 +614,26 @@ a sensible route rather than in a corner nobody visits.
   and paced from a hash of the line so the one blaming the potato salad always
   sounds like the same person and never sounds like the one blaming the grill.
   One line at a time, by priority — a shout cuts off a mutter, a mutter waits its
-  turn or is dropped — and the jingle drops a long way underneath, because the
-  line is the joke and the tune is only furniture
+  turn — and the jingle drops a long way underneath, because the line is the
+  joke and the tune is only furniture.
+
+  **Nobody ever talks over anybody.** A line in progress always finishes, even
+  if the room has just worked it out and even if somebody has been caught. Two
+  voices at once is unintelligible, and in a game whose jokes *are* the content,
+  losing half of two lines is worse than hearing one of them a beat late.
+  Priority still decides who speaks *next*, and exactly one line waits — a
+  backlog would have the room reciting, in a quiet moment, everything it thought
+  of while it was busy. A line that has waited too long is dropped rather than
+  arriving after its moment has gone.
+
+  **And the room does not repeat itself.** A prop that has just been accused
+  goes quiet for a while, and the crowd picks the nearest one that has not —
+  so it works *down* its shortlist instead of looping the same joke every three
+  seconds at anybody standing near the potato salad. Passing over a prop rather
+  than falling silent is the better half of the rule: in a supermarket with
+  eleven suspects, it is the whole character of the level. It is a gap, not a
+  ban — long enough that you will not hear a line twice crossing a room once,
+  short enough that a long stay in one corner does not silence it forever
 - **Audio:** `expo-audio`, playing a synthesised set built by `tools/make-sounds.mjs`
   — the gurgle-and-poof, the nugget, Fluffy's whistle, the crowd sniffing and
   then blaming and then going up all at once, the win fanfare and the losing

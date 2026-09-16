@@ -134,6 +134,17 @@ export const CAMERA_LOOK_AHEAD = 0.34;
  */
 export const PROP_ANIM_FPS = 12;
 
+/**
+ * How long a blame prop stays quiet after it has been accused, in seconds of run
+ * time — which is what `RunState.elapsed` counts in.
+ *
+ * Long enough that you will not hear the same line twice in a room you are
+ * crossing once, and short enough that a long stint near one corner does not
+ * silence it forever. With five to eleven suspects a room, the practical effect
+ * is that the crowd works through the whole list before anything repeats.
+ */
+export const BLAME_COOLDOWN_SECONDS = 24;
+
 // -------------------------------------------------------------- movement
 
 /** Waddling. World units per second. */
