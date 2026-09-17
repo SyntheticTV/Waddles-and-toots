@@ -2267,6 +2267,521 @@ const LifeguardRamp = () => (
   </Group>
 );
 
+// ------------------------------------------------------------- the grocery
+//
+// A supermarket is shelving and boxes, which is a lot of rectangles — so the
+// things the crowd *blames* have to be the shapes that are not. Everything on
+// the shortlist is round, soft or spilling; everything structural is square.
+// That is what stops eleven blame props on one floor turning into wallpaper.
+
+const SHELF = '#B9B2A4';
+const SHELF_DARK = '#8B8478';
+const PRODUCE = ['#C9542F', '#D99B2B', '#6E9B47', '#A8567F', '#3E7FA8'];
+
+/** Product on a shelf: rows of little blocks, which is all it needs to be. */
+function Stock({ x, y, w, rows, cell = 7 }: { x: number; y: number; w: number; rows: number; cell?: number }) {
+  const cells: React.ReactElement[] = [];
+  const across = Math.max(1, Math.floor(w / (cell + 1.5)));
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < across; c++) {
+      cells.push(
+        <Rect
+          key={`${r}-${c}`}
+          x={x + c * (cell + 1.5)}
+          y={y + r * (cell + 4)}
+          width={cell}
+          height={cell}
+          color={PRODUCE[(r * 3 + c * 5) % PRODUCE.length]}
+          opacity={0.9}
+        />
+      );
+    }
+  }
+  return <Group>{cells}</Group>;
+}
+
+/** A long run of shelving, seen from slightly above. */
+const ShelfRun = () => (
+  <Group>
+    <Ink d="M 2 2 L 98 2 L 95 9 L 5 9 Z" fill={lighten(SHELF, 0.22)} outline={SHELF_DARK} weight={OUTLINE_FINE} />
+    <Panel x={3} y={9} w={94} h={20} colors={[SHELF, darken(SHELF, 0.26)]} r={1.5} outline={SHELF_DARK} />
+    <Stock x={7} y={12} w={86} rows={2} cell={6} />
+    <Stroke d="M 4 29 L 96 29" color={SHELF_DARK} weight={2.5} />
+    <Sheen cx={20} cy={10} r={24} strength={0.22} />
+  </Group>
+);
+
+/** One shelf unit, at the end of a broken aisle. */
+const ShelfUnit = () => (
+  <Group>
+    <Ink d="M 4 4 L 96 4 L 90 16 L 10 16 Z" fill={lighten(SHELF, 0.22)} outline={SHELF_DARK} weight={OUTLINE_FINE} />
+    <Panel x={8} y={16} w={84} h={70} colors={[SHELF, darken(SHELF, 0.3)]} r={2} outline={SHELF_DARK} />
+    <Stock x={14} y={22} w={72} rows={5} cell={10} />
+    <Stroke d="M 9 86 L 91 86" color={SHELF_DARK} weight={3} />
+    <Sheen cx={24} cy={22} r={26} strength={0.24} />
+  </Group>
+);
+
+/** The checkouts. Nobody is on them. */
+const Checkouts = () => (
+  <Group>
+    <Panel x={2} y={6} w={96} h={16} colors={[lighten(art.metal, 0.2), darken(art.metal, 0.28)]} r={2} />
+    {/* the belt */}
+    <Rect x={8} y={10} width={58} height={8} color={art.charcoal} opacity={0.85} />
+    <Panel x={72} y={2} w={22} h={14} colors={[darken(art.charcoal, 0.1), darken(art.charcoal, 0.4)]} r={2} />
+    <Rect x={76} y={5} width={14} height={7} color={palette.stink} opacity={0.75} />
+    <Stroke d="M 3 22 L 97 22" color={art.metalDark} weight={2.5} />
+  </Group>
+);
+
+/** The durian. Somebody has opened it. */
+const Durian = ({ t }: ArtProps) => (
+  <Group>
+    <Form
+      d="M 16 62 q 34 -30 68 0 q 6 24 -14 32 q -20 8 -40 0 q -20 -8 -14 -32 Z"
+      colors={['#B7B75E', '#8E9440', '#5E6A28']}
+      positions={[0, 0.45, 1]}
+      from={[18, 34]}
+      to={[82, 96]}
+      outline="#404A18"
+      weight={OUTLINE_FINE}
+    />
+    {/* the spikes, which are the entire read */}
+    {[
+      [22, 58], [36, 42], [52, 36], [68, 44], [82, 60],
+      [26, 84], [44, 92], [62, 92], [78, 82],
+    ].map(([x, y], i) => (
+      <Ink
+        key={i}
+        d={`M ${x - 7} ${y + 6} L ${x} ${y - 10} L ${x + 7} ${y + 6} Z`}
+        fill="#A3A84E"
+        outline="#404A18"
+        weight={1.8}
+      />
+    ))}
+    {/* and it is open */}
+    <Ink d="M 40 58 q 12 -8 22 2 q -4 12 -12 12 q -10 -2 -10 -14 Z" fill={art.cream} outline="#8E9440" weight={2} />
+    <Whiff x={30} y={30} t={t} />
+    <Whiff x={62} y={22} t={t} phase={1.3} />
+    <Whiff x={46} y={16} t={t} phase={2.4} />
+  </Group>
+);
+
+/** The fish counter. It is Tuesday. */
+const FishCounter = ({ t }: ArtProps) => (
+  <Group>
+    <Panel x={2} y={26} w={96} h={30} colors={[lighten(art.metal, 0.22), darken(art.metal, 0.3)]} r={2} />
+    {/* the ice, and what is on it */}
+    <Ink d="M 6 24 L 94 24 L 90 40 L 10 40 Z" fill={palette.breeze} outline="#7E8894" weight={2} />
+    {[18, 42, 66].map((x, i) => (
+      <Group key={i}>
+        <Ink
+          d={`M ${x} 34 q 10 -9 20 -1 q 5 4 0 8 q -11 8 -20 -1 Z`}
+          fill={art.shell}
+          outline="#7A6A4C"
+          weight={1.8}
+        />
+        <Ink d={`M ${x + 20} 33 L ${x + 28} 28 L ${x + 28} 40 Z`} fill={darken(art.shell, 0.16)} outline="#7A6A4C" weight={1.6} />
+      </Group>
+    ))}
+    <Stroke d="M 4 56 L 96 56" color={art.metalDark} weight={2.5} />
+    <Whiff x={26} y={20} t={t} />
+    <Whiff x={60} y={14} t={t} phase={1.6} />
+  </Group>
+);
+
+/** The cheese case, doing what the cheese case does. */
+const CheeseCase = ({ t }: ArtProps) => (
+  <Group>
+    <Panel x={4} y={28} w={92} h={34} colors={[lighten(art.metal, 0.24), darken(art.metal, 0.28)]} r={2} />
+    <Panel x={10} y={22} w={80} h={22} colors={[palette.breeze, darken(palette.breeze, 0.2)]} r={2} />
+    {[
+      [20, '#E8C25E'],
+      [42, '#F0DA9B'],
+      [64, '#D9A83E'],
+    ].map(([x, c], i) => (
+      <Group key={i}>
+        <Ink
+          d={`M ${x} 42 L ${Number(x) + 18} 42 L ${Number(x) + 14} 26 L ${Number(x) + 4} 26 Z`}
+          fill={c as string}
+          outline="#9A7A18"
+          weight={2}
+        />
+        <Circle cx={Number(x) + 7} cy={35} r={2} color="#B08A2A" opacity={0.8} />
+        <Circle cx={Number(x) + 12} cy={31} r={1.5} color="#B08A2A" opacity={0.7} />
+      </Group>
+    ))}
+    <Whiff x={30} y={16} t={t} />
+    <Whiff x={66} y={10} t={t} phase={1.4} />
+    <Sheen cx={22} cy={30} r={22} strength={0.28} />
+  </Group>
+);
+
+/** Whatever happened on aisle four, this morning. */
+const AisleFour = ({ t }: ArtProps) => (
+  <Group>
+    <Ink
+      d="M 8 52 q 22 -14 44 -6 q 24 8 42 -4 q 4 16 -10 22 q -34 10 -68 2 q -12 -4 -8 -14 Z"
+      fill="#C9B489"
+      outline="#8A7A4C"
+      weight={OUTLINE_FINE}
+    />
+    <Ink d="M 24 56 q 14 -6 26 0 q -12 8 -26 0 Z" fill={darken('#C9B489', 0.22)} outline="#8A7A4C" weight={1.6} />
+    {/* the sign that has been there since ten */}
+    <Ink d="M 62 60 L 76 26 L 90 60 Z" fill={palette.nugget} outline="#9A6E18" weight={2} />
+    <Stroke d="M 76 36 L 76 48" color={palette.ink} weight={3} />
+    <Circle cx={76} cy={53} r={2.4} color={palette.ink} />
+    <Whiff x={26} y={38} t={t} />
+    <Whiff x={46} y={32} t={t} phase={1.7} />
+  </Group>
+);
+
+/** Forty pounds of onions. */
+const OnionSacks = ({ t }: ArtProps) => (
+  <Group>
+    {[
+      [6, 44],
+      [38, 36],
+      [66, 46],
+    ].map(([x, y], i) => (
+      <Group key={i}>
+        <Form
+          d={`M ${x} ${Number(y) + 16} q 14 -22 28 0 q 4 18 -14 20 q -18 -2 -14 -20 Z`}
+          colors={['#D8C9A8', '#B7A684', '#8A7B5C']}
+          positions={[0, 0.45, 1]}
+          from={[Number(x), Number(y)]}
+          to={[Number(x) + 28, Number(y) + 36]}
+          outline="#6A5C3E"
+          weight={OUTLINE_FINE}
+        />
+        {/* the netting */}
+        {[0, 1, 2].map((k) => (
+          <Stroke
+            key={k}
+            d={`M ${Number(x) + 4 + k * 8} ${Number(y) + 8} L ${Number(x) + 4 + k * 8} ${Number(y) + 34}`}
+            color="#6A5C3E"
+            weight={1.4}
+            opacity={0.5}
+          />
+        ))}
+        <Circle cx={Number(x) + 14} cy={Number(y) + 22} r={5} color="#C2A86E" opacity={0.85} />
+      </Group>
+    ))}
+    <Whiff x={28} y={26} t={t} />
+    <Whiff x={64} y={22} t={t} phase={1.5} />
+  </Group>
+);
+
+/** The chicken that has been going round since breakfast. */
+const Rotisserie = ({ t }: ArtProps) => (
+  <Group>
+    <Panel x={4} y={20} w={92} h={44} colors={[lighten(art.metal, 0.2), darken(art.metal, 0.34)]} r={3} />
+    <Panel x={11} y={26} w={78} h={30} colors={['#F2C070', '#C98A2E']} r={2} />
+    {/* three of them, on the spit */}
+    {[24, 48, 72].map((x, i) => (
+      <Ink
+        key={i}
+        d={`M ${x - 9} 41 q 0 -11 9 -11 q 9 0 9 11 q 0 10 -9 10 q -9 0 -9 -10 Z`}
+        fill="#B97A32"
+        outline="#7A4E18"
+        weight={2}
+      />
+    ))}
+    <Stroke d="M 12 41 L 88 41" color={art.metalDark} weight={2} opacity={0.8} />
+    <Stroke d="M 6 62 L 94 62" color={art.metalDark} weight={2.5} />
+    <Whiff x={30} y={14} t={t} />
+    <Whiff x={64} y={8} t={t} phase={1.8} />
+    <Sheen cx={24} cy={28} r={22} strength={0.3} />
+  </Group>
+);
+
+/** A jar that has given up. */
+const PickleJar = ({ t }: ArtProps) => (
+  <Group>
+    <Form
+      d="M 28 40 q 22 -6 44 0 l 0 52 q -22 6 -44 0 Z"
+      colors={[lighten('#8FA84E', 0.4), '#8FA84E', '#5E7030']}
+      positions={[0, 0.4, 1]}
+      from={[28, 40]}
+      to={[72, 92]}
+      outline="#46551E"
+      weight={OUTLINE_FINE}
+    />
+    <Ink d="M 30 22 L 70 22 L 70 42 L 30 42 Z" fill={art.metalDark} outline="#3E4347" weight={2} />
+    {/* the lid, off */}
+    <Ink d="M 68 10 q 18 2 16 10 q -2 8 -16 6 Z" fill={art.metal} outline="#5E6367" weight={2} />
+    {[
+      [42, 56],
+      [58, 66],
+      [44, 78],
+    ].map(([x, y], i) => (
+      <Ink key={i} d={`M ${x - 9} ${y} q 9 -6 18 0 q -9 7 -18 0 Z`} fill="#6E8A32" outline="#46551E" weight={1.6} />
+    ))}
+    <Whiff x={44} y={16} t={t} />
+    <Whiff x={24} y={26} t={t} phase={1.5} />
+  </Group>
+);
+
+/** The wilted greens bin, which is now a science project. */
+const WiltedGreens = ({ t }: ArtProps) => (
+  <Group>
+    <Form
+      d="M 16 42 L 84 42 L 76 96 L 24 96 Z"
+      colors={[lighten('#6E8A5C', 0.26), '#6E8A5C', darken('#6E8A5C', 0.34)]}
+      positions={[0, 0.45, 1]}
+      from={[18, 42]}
+      to={[82, 94]}
+      outline="#3E5232"
+      weight={OUTLINE_FINE}
+    />
+    {/* what is in it */}
+    <Ink d="M 22 42 q 10 -22 26 -14 q -2 12 -10 14 Z" fill="#8FA84E" outline="#46551E" weight={2} />
+    <Ink d="M 48 42 q 6 -20 24 -12 q -4 10 -12 12 Z" fill="#6E8A32" outline="#46551E" weight={2} />
+    <Ink d="M 62 44 q 14 -10 22 0 q -8 8 -22 0 Z" fill="#A8A83E" outline="#46551E" weight={2} />
+    <Whiff x={30} y={24} t={t} />
+    <Whiff x={56} y={16} t={t} phase={1.2} />
+    <Whiff x={74} y={22} t={t} phase={2.3} />
+  </Group>
+);
+
+/** The pet food aisle, having a moment. */
+const PetFood = ({ t }: ArtProps) => (
+  <Group>
+    {[
+      [6, '#8E5A3A'],
+      [38, '#A8703E'],
+      [70, '#7A4E2E'],
+    ].map(([x, c], i) => (
+      <Group key={i}>
+        <Form
+          d={`M ${x} 40 q 12 -8 24 0 q 4 22 -2 30 q -10 6 -20 0 q -6 -8 -2 -30 Z`}
+          colors={[lighten(c as string, 0.3), c as string, darken(c as string, 0.34)]}
+          positions={[0, 0.45, 1]}
+          from={[Number(x), 36]}
+          to={[Number(x) + 24, 72]}
+          outline="#4A2E1A"
+          weight={OUTLINE_FINE}
+        />
+        <Ink
+          d={`M ${Number(x) + 3} 48 L ${Number(x) + 21} 48 L ${Number(x) + 21} 58 L ${Number(x) + 3} 58 Z`}
+          fill={art.cream}
+          outline="#4A2E1A"
+          weight={1.6}
+        />
+        {/* a paw print, because every bag has one */}
+        <Circle cx={Number(x) + 12} cy={54} r={2.6} color="#7A4E2E" />
+      </Group>
+    ))}
+    <Whiff x={26} y={28} t={t} />
+    <Whiff x={62} y={22} t={t} phase={1.6} />
+  </Group>
+);
+
+/** Whose trolley is this? */
+const AbandonedTrolley = ({ t }: ArtProps) => (
+  <Group>
+    <Ink
+      d="M 14 28 L 88 28 L 78 62 L 24 62 Z"
+      fill={lighten(art.metal, 0.12)}
+      outline={art.metalDark}
+      weight={OUTLINE_FINE}
+    />
+    {/* the mesh, which is what makes it a trolley and not a box */}
+    {[0, 1, 2, 3].map((i) => (
+      <Stroke key={`v${i}`} d={`M ${26 + i * 16} 28 L ${30 + i * 14} 62`} color={art.metalDark} weight={1.6} opacity={0.7} />
+    ))}
+    {[0, 1].map((i) => (
+      <Stroke key={`h${i}`} d={`M ${17 + i * 3} ${39 + i * 12} L ${85 - i * 3} ${39 + i * 12}`} color={art.metalDark} weight={1.6} opacity={0.7} />
+    ))}
+    <Stroke d="M 10 24 L 90 24" color={art.metalDark} weight={4} />
+    {/* something has been in there a while */}
+    <Ink d="M 40 34 q 14 -10 24 0 q -4 12 -14 12 q -12 -2 -10 -12 Z" fill="#8FA84E" outline="#46551E" weight={2} />
+    <Circle cx={30} cy={70} r={5} color={art.charcoal} />
+    <Circle cx={72} cy={70} r={5} color={art.charcoal} />
+    <Whiff x={52} y={20} t={t} />
+  </Group>
+);
+
+/** The bleach aisle, losing. */
+const BleachAisle = ({ t }: ArtProps) => (
+  <Group>
+    {[
+      [8, palette.breeze],
+      [38, palette.white],
+      [68, '#C9E0F0'],
+    ].map(([x, c], i) => (
+      <Group key={i}>
+        <Form
+          d={`M ${x} 40 q 12 -6 24 0 l 0 44 q -12 6 -24 0 Z`}
+          colors={[palette.white, c as string, darken(c as string, 0.28)]}
+          positions={[0, 0.4, 1]}
+          from={[Number(x), 40]}
+          to={[Number(x) + 24, 84]}
+          outline="#6E8894"
+          weight={OUTLINE_FINE}
+        />
+        <Ink
+          d={`M ${Number(x) + 8} 26 L ${Number(x) + 16} 26 L ${Number(x) + 16} 42 L ${Number(x) + 8} 42 Z`}
+          fill={palette.sea}
+          outline="#1E4A60"
+          weight={1.8}
+        />
+        <Ink
+          d={`M ${Number(x) + 3} 52 L ${Number(x) + 21} 52 L ${Number(x) + 21} 66 L ${Number(x) + 3} 66 Z`}
+          fill={palette.sea}
+          outline="#1E4A60"
+          weight={1.6}
+        />
+      </Group>
+    ))}
+    {/* it is trying */}
+    <Stroke d="M 30 24 q 10 -12 20 -2" color={palette.breeze} weight={3.5} opacity={0.7} />
+    <Whiff x={62} y={18} t={t} />
+    <Sheen cx={20} cy={48} r={20} strength={0.3} />
+  </Group>
+);
+
+/** An open chiller. The only cold air in the building. */
+const Chiller = ({ t }: ArtProps) => (
+  <Group>
+    <Form
+      d="M 6 34 L 94 34 L 88 92 L 12 92 Z"
+      colors={[lighten(art.metal, 0.3), art.metal, darken(art.metal, 0.3)]}
+      positions={[0, 0.4, 1]}
+      from={[8, 34]}
+      to={[90, 92]}
+      outline="#5E6367"
+      weight={OUTLINE_FINE}
+    />
+    {/* the cold inside it */}
+    <Ink d="M 14 40 L 86 40 L 82 74 L 18 74 Z" fill={palette.breeze} outline="#6E8894" weight={2} />
+    <Stock x={22} y={46} w={58} rows={2} cell={9} />
+    {/* and the cold coming out of it */}
+    {[0, 1, 2].map((i) => (
+      <Stroke
+        key={i}
+        d={`M ${12 + i * 10} ${30 - i * 12} q 22 ${-10 - i} 38 -2 q 14 8 30 -6`}
+        color={i % 2 ? palette.white : palette.breeze}
+        weight={5 - i}
+        opacity={0.65 + 0.25 * Math.sin(t * 1.5 + i)}
+      />
+    ))}
+    <Sheen cx={22} cy={44} r={24} strength={0.34} />
+  </Group>
+);
+
+/** A tower of tins, stacked by an optimist. */
+const TinTower = () => (
+  <Group>
+    {[0, 1, 2, 3].map((i) => (
+      <Group key={i}>
+        <Form
+          d={`M 22 ${84 - i * 20} L 78 ${84 - i * 20} L 78 ${100 - i * 20} L 22 ${100 - i * 20} Z`}
+          colors={[lighten(art.metal, 0.34), art.metal, darken(art.metal, 0.3)]}
+          positions={[0, 0.4, 1]}
+          from={[22, 84 - i * 20]}
+          to={[78, 100 - i * 20]}
+          outline="#5E6367"
+          weight={2}
+        />
+        <Rect x={26} y={88 - i * 20} width={48} height={8} color={PRODUCE[i % PRODUCE.length]} opacity={0.9} />
+      </Group>
+    ))}
+    <Sheen cx={34} cy={30} r={20} strength={0.32} />
+  </Group>
+);
+
+/** A stack of baskets. */
+const BasketStack = () => (
+  <Group>
+    {/*
+      Three baskets, not four, and each one gets a rim of its own — nested at a
+      tighter spacing they read as a stack of coloured stripes rather than as
+      anything you could carry.
+    */}
+    {[0, 1, 2].map((i) => (
+      <Group key={i}>
+        <Ink
+          d={`M ${10 + i * 3} ${74 - i * 30} L ${90 - i * 3} ${74 - i * 30} L ${82 - i * 3} ${
+            112 - i * 30
+          } L ${18 + i * 3} ${112 - i * 30} Z`}
+          fill={i % 2 ? '#C9542F' : '#D4633C'}
+          outline="#7E2A20"
+          weight={OUTLINE_FINE}
+        />
+        <Ink
+          d={`M ${7 + i * 3} ${68 - i * 30} L ${93 - i * 3} ${68 - i * 30} L ${90 - i * 3} ${
+            78 - i * 30
+          } L ${10 + i * 3} ${78 - i * 30} Z`}
+          fill={darken('#C9542F', 0.28)}
+          outline="#7E2A20"
+          weight={2}
+        />
+      </Group>
+    ))}
+    {/* the handle, folded down on the top one */}
+    <Stroke d="M 26 20 q 24 -16 48 0" color={art.charcoal} weight={4} />
+    <Sheen cx={28} cy={30} r={22} strength={0.26} />
+  </Group>
+);
+
+/** A wet floor sign, warning about something from hours ago. */
+const WetFloorSign = () => (
+  <Group>
+    <Ink d="M 26 108 L 44 18 L 56 18 L 74 108 Z" fill={palette.nugget} outline="#9A6E18" weight={OUTLINE_FINE} />
+    <Stroke d="M 50 38 L 50 66" color={palette.ink} weight={5} />
+    <Circle cx={50} cy={78} r={4.5} color={palette.ink} />
+    <Stroke d="M 34 96 L 66 96" color="#9A6E18" weight={3} opacity={0.7} />
+  </Group>
+);
+
+/** A cardboard display of crisps, which will go everywhere. */
+const CrispDisplay = () => (
+  <Group>
+    <Panel x={10} y={36} w={80} h={58} colors={[lighten(art.wood, 0.3), darken(art.wood, 0.2)]} r={2} />
+    <Ink d="M 6 18 L 94 18 L 90 40 L 10 40 Z" fill={palette.alarm} outline="#8E3A2E" weight={2} />
+    {[0, 1, 2].map((r) =>
+      [0, 1, 2].map((c) => (
+        <Ink
+          key={`${r}-${c}`}
+          d={`M ${18 + c * 24} ${46 + r * 16} q 9 -7 18 0 q -9 8 -18 0 Z`}
+          fill={[palette.nugget, '#6E9B47', '#C9542F'][r]}
+          outline="#7A5A1A"
+          weight={1.6}
+        />
+      ))
+    )}
+    <Sheen cx={22} cy={28} r={22} strength={0.28} />
+  </Group>
+);
+
+/** A trolley somebody left in the lane. */
+const ShoppingTrolley = () => (
+  <Group>
+    <Ink d="M 12 30 L 90 30 L 80 68 L 22 68 Z" fill={lighten(art.metal, 0.14)} outline={art.metalDark} weight={OUTLINE_FINE} />
+    {[0, 1, 2, 3].map((i) => (
+      <Stroke key={i} d={`M ${24 + i * 16} 30 L ${28 + i * 14} 68`} color={art.metalDark} weight={1.6} opacity={0.7} />
+    ))}
+    <Stroke d="M 8 26 L 94 26" color={art.metalDark} weight={4} />
+    <Circle cx={30} cy={78} r={6} color={art.charcoal} />
+    <Circle cx={74} cy={78} r={6} color={art.charcoal} />
+    <Sheen cx={28} cy={38} r={20} strength={0.26} />
+  </Group>
+);
+
+/** A pallet, parked where it should not be. */
+const Pallet = () => (
+  <Group>
+    <Ink d="M 4 40 L 96 40 L 92 60 L 8 60 Z" fill={art.wood} outline="#6E4A22" weight={OUTLINE_FINE} />
+    {[0, 1, 2, 3].map((i) => (
+      <Rect key={i} x={10 + i * 21} y={40} width={4} height={20} color={darken(art.wood, 0.34)} opacity={0.7} />
+    ))}
+    <Ink d="M 14 16 L 86 16 L 82 40 L 18 40 Z" fill="#C9B489" outline="#8A7A4C" weight={2} />
+    <Stroke d="M 18 28 L 82 28" color="#8A7A4C" weight={2} opacity={0.6} />
+    <Sheen cx={26} cy={22} r={20} strength={0.24} />
+  </Group>
+);
+
 const BY_ID: Record<string, Entry> = {
   'potato-salad': { w: 100, h: 50, Art: PotatoSalad },
   grill: { w: 100, h: 80, Art: Grill },
@@ -2394,6 +2909,41 @@ const BY_ID: Record<string, Entry> = {
   'pier-gate': { w: 100, h: 78, Art: FalseDoor },
   'dune-path': { w: 100, h: 100, Art: DunePath },
   'lifeguard-ramp': { w: 100, h: 114, Art: LifeguardRamp },
+  // --- the grocery ---
+  'aisle-1': { w: 100, h: 32, Art: ShelfRun },
+  'aisle-3': { w: 100, h: 32, Art: ShelfRun },
+  'aisle-6': { w: 100, h: 32, Art: ShelfRun },
+  'aisle-2a': { w: 100, h: 93, Art: ShelfUnit },
+  'aisle-2b': { w: 100, h: 93, Art: ShelfUnit },
+  'aisle-4a': { w: 100, h: 93, Art: ShelfUnit },
+  'aisle-4b': { w: 100, h: 93, Art: ShelfUnit },
+  'aisle-5a': { w: 100, h: 93, Art: ShelfUnit },
+  'aisle-5b': { w: 100, h: 93, Art: ShelfUnit },
+  checkouts: { w: 100, h: 30, Art: Checkouts },
+  durian: { w: 100, h: 88, Art: Durian },
+  'fish-counter': { w: 100, h: 62, Art: FishCounter },
+  'cheese-case': { w: 100, h: 70, Art: CheeseCase },
+  'aisle-four': { w: 100, h: 60, Art: AisleFour },
+  'onion-sacks': { w: 100, h: 70, Art: OnionSacks },
+  rotisserie: { w: 100, h: 73, Art: Rotisserie },
+  'pickle-jar': { w: 100, h: 100, Art: PickleJar },
+  'wilted-greens': { w: 100, h: 100, Art: WiltedGreens },
+  'pet-food': { w: 100, h: 64, Art: PetFood },
+  'abandoned-trolley': { w: 100, h: 78, Art: AbandonedTrolley },
+  'bleach-aisle': { w: 100, h: 70, Art: BleachAisle },
+  'chiller-1': { w: 100, h: 100, Art: Chiller },
+  'chiller-2': { w: 100, h: 100, Art: Chiller },
+  'chiller-3': { w: 100, h: 100, Art: Chiller },
+  'chiller-4': { w: 100, h: 100, Art: Chiller },
+  'tin-tower': { w: 100, h: 127, Art: TinTower },
+  'basket-stack': { w: 100, h: 120, Art: BasketStack },
+  'wet-floor-sign': { w: 100, h: 120, Art: WetFloorSign },
+  'crisp-display': { w: 100, h: 100, Art: CrispDisplay },
+  'shopping-trolley': { w: 100, h: 92, Art: ShoppingTrolley },
+  pallet: { w: 100, h: 83, Art: Pallet },
+  'staff-room': { w: 100, h: 78, Art: FalseDoor },
+  stockroom: { w: 100, h: 78, Art: FalseDoor },
+  'warehouse-door': { w: 100, h: 114, Art: FalseDoor },
 };
 
 /** Anything a level hasn't drawn yet still reads as what it does. */

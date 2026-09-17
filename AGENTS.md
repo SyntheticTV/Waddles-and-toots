@@ -71,7 +71,18 @@ Generated things live outside `src/`:
 ```
 assets/audio/*.wav   the sound set — build output, never hand-edited
 tools/make-sounds.mjs  the source of that sound set: npm run sounds
+assets/icon.png etc. the launcher icons — also build output
+tools/make-icons.mjs   the source of those: npm run icons
 ```
+
+**The app icon is the game's own art.** `npm run icons` draws Waddles and a poof
+with the same components the room uses and writes every launcher asset from it,
+so the icon cannot drift away from what the game actually looks like — and a
+vector game gets a 1024px icon without anybody redrawing anything. Two things it
+is easy to get wrong, both of which happened: a poof's `scale` is **pixels per
+world unit**, not a fraction of the canvas, so a tenth of the right number draws a
+cloud twelve pixels wide; and the poof is stink green, so it is invisible on a
+stink-green ground. The icon sits on paper for that reason.
 
 **The art is vector, drawn in Skia** — no sprite sheets, no image assets. Every
 character lives in a 100-unit box with its feet at the origin (see `art/ink.ts`),

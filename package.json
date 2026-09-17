@@ -28,7 +28,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "sounds": "node tools/make-sounds.mjs",
-    "voices": "node tools/make-voices.mjs"
+    "voices": "node tools/make-voices.mjs",
+    "icons": "node tools/make-icons.mjs"
   },
   "private": true
 }
