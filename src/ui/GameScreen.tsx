@@ -64,6 +64,9 @@ export function GameScreen({
     return leaveGame;
   }, []);
 
+  /** Whether this run's result has been written down yet. */
+  const savedRef = useRef(false);
+
   // A fresh run whenever the level changes or the player retries.
   useEffect(() => {
     runRef.current = createRun(level);
@@ -75,23 +78,29 @@ export function GameScreen({
    * Save on level end, always — the house rule, and the thing that decides
    * whether room five is somewhere a player can get back to.
    *
-   * Guarded by a ref rather than an effect dependency because the loop
-   * re-renders every frame and the run object is mutated in place: `outcome`
-   * changing is not something React can see, so this is checked on the frame the
-   * end card appears and then latched.
+   * In an effect with no dependency list, *not* in the render body.
+   *
+   * The run is mutated in place and the loop re-renders every frame, so
+   * `outcome` changing is not something React can see — which is why this is a
+   * check-every-render-and-latch rather than a dependency. But doing the check
+   * inline meant writing to the progress store while this component was still
+   * rendering, and the store notifies its subscribers synchronously: `App`
+   * listens, so React quite rightly complained about a component being updated
+   * during another component's render. An effect runs after the render is
+   * committed, which is the right side of that line.
    */
-  const savedRef = useRef(false);
-  const finished = runRef.current.outcome !== 'playing';
-  if (finished && !savedRef.current) {
+  useEffect(() => {
+    const run = runRef.current;
+    if (run.outcome === 'playing' || savedRef.current) return;
     savedRef.current = true;
     recordRun(level.id, {
-      cleared: runRef.current.outcome === 'escaped',
-      poofs: runRef.current.poofs,
+      cleared: run.outcome === 'escaped',
+      poofs: run.poofs,
       // `elapsed` is already seconds; dividing again recorded every best time
       // as a fortieth of a second.
-      seconds: runRef.current.elapsed,
+      seconds: run.elapsed,
     });
-  }
+  });
 
   useEffect(() => {
     let raf = 0;

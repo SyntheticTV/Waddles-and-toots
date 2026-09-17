@@ -155,6 +155,15 @@ because the audio service is not a React component and still has to read the
 settings synchronously. Both are written fire-and-forget: a failed write costs a
 preference or a star, which is not worth blocking a button tap over.
 
+**Neither store may be written during a render.** Both notify their subscribers
+synchronously, and `App` subscribes to progress — so recording a result in
+`GameScreen`'s render body updates `App` while `GameScreen` is still rendering,
+which React warns about by name. The run is mutated in place, so noticing that a
+round has ended genuinely is a check-every-render-and-latch rather than a
+dependency; do it in an effect with no dependency list, which runs after the
+render is committed. Settings are only ever written from event handlers, which
+are always safe.
+
 Progress is keyed by **level id, never by index**, so inserting a room in the
 middle does not hand somebody else's stars to whatever took its place. Nothing in
 there is ever taken away — a messy replay cannot lose a star a clean run earned,
