@@ -42,3 +42,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Builds downloaded from EAS for testing; never part of the repo.
+*.apk
+*.aab
+*.ipa

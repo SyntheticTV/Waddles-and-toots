@@ -19,6 +19,7 @@
  */
 
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 
 import type { RunState } from '../game/engine';
@@ -128,11 +129,26 @@ function setLevel(id: SoundId, target: number): void {
 export function startAudio(): void {
   if (bank) return;
 
-  // Sound effects should sit alongside whatever else is playing, and the
-  // hardware silent switch should silence the game — on a game for small
-  // children that switch is the mute a parent reaches for first.
+  /*
+   * Sound sits alongside whatever else is playing, and never keeps going once
+   * the app is in the background.
+   *
+   * `playsInSilentMode` has to differ by platform, and getting that wrong makes
+   * the whole game silent on Android.
+   *
+   * On iOS it means the hardware mute switch — a physical switch whose entire
+   * job is "make this device quiet", and on a game for small children that is
+   * the mute a parent reaches for first. Respecting it is right.
+   *
+   * On Android there is no such switch. `false` there means playback is
+   * suppressed when the *ringer* is silent or on vibrate — and a phone on
+   * vibrate is most phones, most of the time. It would tie a game's audio to a
+   * setting about phone calls, which is not what anybody means by it: games play
+   * on the media stream and follow the media volume, which they can already turn
+   * down. So Android gets `true`, and the volume keys stay in charge.
+   */
   setAudioModeAsync({
-    playsInSilentMode: false,
+    playsInSilentMode: Platform.OS !== 'ios',
     interruptionMode: 'mixWithOthers',
     shouldPlayInBackground: false,
   }).catch(() => {});

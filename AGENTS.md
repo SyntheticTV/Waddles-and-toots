@@ -181,6 +181,16 @@ there is ever taken away — a messy replay cannot lose a star a clean run earne
 and losing costs nothing already banked. `recordRun` is called on *every* ending,
 win or lose, from the frame the end card appears.
 
+**`playsInSilentMode` differs by platform, and getting it wrong makes the game
+silent.** On iOS it means the hardware mute switch, which a game for small
+children should absolutely respect — that switch is the mute a parent reaches
+for first. On Android there is no such switch and the same flag means something
+far broader: playback is suppressed whenever the *ringer* is silent or on
+vibrate, which is most phones most of the time. It tied the game's audio to a
+setting about phone calls, and the first Android build had no sound at all. iOS
+gets `false`, Android gets `true`, and on Android the media volume keys stay in
+charge — which is what the two settings switches are for anyway.
+
 **Audio is a service, not a hook.** The jingle plays across the home screen, the
 settings panel and the room, and no screen outlives another — so `audio.ts` owns
 the players, the app starts it once, and screens call into it. `enterGame` and
