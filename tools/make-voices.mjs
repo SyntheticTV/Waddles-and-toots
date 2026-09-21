@@ -129,6 +129,15 @@ const CAST_BY_ID = {
   'sunset-beach--old-cooler': 'Autonoe',
   'sunset-beach--boardwalk-bins': 'Erinome',
 
+  /*
+   * Room six has eleven suspects, which is the most of any room and more than a
+   * fifteen-voice pool can hand out cleanly — three of them collided. Pinned so
+   * the supermarket sounds like eleven different shoppers.
+   */
+  'big-save-grocery--rotisserie': 'Zephyr',
+  'big-save-grocery--abandoned-trolley': 'Aoede',
+  'big-save-grocery--bleach-aisle': 'Zubenelgenubi',
+
   'decoy-1': 'Iapetus',
   'decoy-2': 'Iapetus',
   'decoy-cat': 'Iapetus',

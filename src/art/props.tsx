@@ -2782,6 +2782,72 @@ const Pallet = () => (
   </Group>
 );
 
+
+/**
+ * A high chair, parked at the end of a table where it can be walked into.
+ *
+ * Tall and narrow, so almost all of it is legs — which is the read: a thing on
+ * stilts with a tray, rather than a small chair.
+ */
+const HighChair = () => (
+  <Group>
+    {/* the splayed legs, which is most of what says "high chair" */}
+    <Stroke d="M 24 132 L 38 54" color={art.woodDark} weight={6} />
+    <Stroke d="M 76 132 L 62 54" color={art.woodDark} weight={6} />
+    <Stroke d="M 30 96 L 70 96" color={art.woodDark} weight={4} />
+    <Form
+      d="M 30 52 L 70 52 L 68 88 L 32 88 Z"
+      colors={[lighten(art.wood, 0.24), art.wood, darken(art.wood, 0.3)]}
+      positions={[0, 0.5, 1]}
+      from={[30, 52]}
+      to={[70, 88]}
+      outline="#6E4A22"
+      weight={OUTLINE_FINE}
+    />
+    {/* the back */}
+    <Ink d="M 30 16 L 70 16 L 70 54 L 30 54 Z" fill={art.wood} outline="#6E4A22" weight={2} />
+    <Stroke d="M 40 22 L 40 50 M 50 22 L 50 50 M 60 22 L 60 50" color={darken(art.wood, 0.34)} weight={2.4} />
+    {/* and the tray, which is the part you catch with a wing */}
+    <Ink d="M 16 56 L 84 56 L 80 70 L 20 70 Z" fill={art.plastic} outline="#A87A8C" weight={2} />
+    <Sheen cx={34} cy={26} r={20} strength={0.26} />
+  </Group>
+);
+
+/**
+ * The pass: the long steel counter the kitchen puts plates on.
+ *
+ * Wide and shallow, so it is drawn as a counter seen from slightly above — the
+ * heat lamps along the top edge are what stop it reading as a plain bench.
+ */
+const ThePass = () => (
+  <Group>
+    <Ink d="M 1 2 L 99 2 L 96 9 L 4 9 Z" fill={lighten(art.metal, 0.3)} outline="#5E6367" weight={OUTLINE_FINE} />
+    <Panel
+      x={2}
+      y={9}
+      w={96}
+      h={14}
+      colors={[art.metal, darken(art.metal, 0.3)]}
+      r={1.5}
+      outline="#5E6367"
+    />
+    {/* heat lamps, and the plates waiting under them */}
+    {[0, 1, 2, 3].map((i) => (
+      <Group key={i}>
+        <Rect x={10 + i * 24} y={2} width={14} height={3} color={palette.nugget} opacity={0.9} />
+        <Ink
+          d={`M ${12 + i * 24} 14 q 5 -4 10 0 q -5 5 -10 0 Z`}
+          fill={palette.white}
+          outline="#9A9179"
+          weight={1.6}
+        />
+      </Group>
+    ))}
+    <Stroke d="M 3 23 L 97 23" color={art.metalDark} weight={2.5} />
+    <Sheen cx={20} cy={10} r={22} strength={0.32} />
+  </Group>
+);
+
 const BY_ID: Record<string, Entry> = {
   'potato-salad': { w: 100, h: 50, Art: PotatoSalad },
   grill: { w: 100, h: 80, Art: Grill },
@@ -2813,6 +2879,8 @@ const BY_ID: Record<string, Entry> = {
   'plate-stack': { w: 100, h: 120, Art: PlateStack },
   'mop-bucket': { w: 100, h: 91, Art: MopBucket },
   'wine-rack': { w: 100, h: 160, Art: WineRack },
+  'high-chair': { w: 100, h: 133, Art: HighChair },
+  'the-pass': { w: 100, h: 27, Art: ThePass },
   'walk-in': { w: 100, h: 89, Art: FalseDoor },
   'toilet-door': { w: 100, h: 100, Art: FalseDoor },
   'open-window': { w: 100, h: 150, Art: FalseWindow },
