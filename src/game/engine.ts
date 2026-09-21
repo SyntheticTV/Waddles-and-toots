@@ -176,6 +176,16 @@ export interface RunState {
    * it is short and why somebody talks through the whole of it.
    */
   riding: { leftMs: number; to: Vec2; from: string } | null;
+  /**
+   * The lift the group just stepped out of, if they have not walked clear of it
+   * yet.
+   *
+   * You arrive *standing in* the lift at the far end — it is a doorway, and the
+   * doors open where you are. Without this the very next frame sees a lift
+   * within reach and sends everybody straight back, so the group ping-pongs
+   * between floors and never gets anywhere.
+   */
+  steppedOutOf: string | null;
   /** True once every nugget is in and the gate has swung open. §11. */
   gateOpen: boolean;
   /** Standing in the gateway. With the gate shut, that is worth saying out loud. */
@@ -263,6 +273,7 @@ export function createRun(level: LevelSpec, opts: CreateRunOptions = {}): RunSta
     poofs: 0,
     blamedAt: {},
     riding: null,
+    steppedOutOf: null,
     gateOpen: level.nuggets.length === 0,
     atExit: false,
 
@@ -316,6 +327,10 @@ export function step(s: RunState, dtMs: number, input: InputState): void {
     });
     if (s.riding.leftMs <= 0) {
       const to = s.riding.to;
+      // Which lift they are about to be standing in — read before `riding` is
+      // cleared, which is a mistake worth making only once.
+      const arrivedAt =
+        s.level.props.find((p) => p.id === s.riding?.from)?.linkTo ?? null;
       s.riding = null;
       /*
        * Put the whole line down at the far end, and forget the trail.
@@ -331,6 +346,7 @@ export function step(s: RunState, dtMs: number, input: InputState): void {
         f.moving = false;
       });
       s.leashBroken = false;
+      s.steppedOutOf = arrivedAt;
       s.events.push({ kind: 'lift-out', at: { ...to } });
     }
     return;
@@ -768,8 +784,16 @@ function tickStink(s: RunState, dt: number): void {
  */
 function checkLift(s: RunState): void {
   if (s.riding) return;
+
+  // Once they have walked clear of the one they arrived in, it works again.
+  if (s.steppedOutOf) {
+    const arrived = s.level.props.find((p) => p.id === s.steppedOutOf);
+    if (!arrived || distToProp(s.waddles, arrived) > T.LIFT_RADIUS + 3) s.steppedOutOf = null;
+  }
+
   for (const prop of s.level.props) {
     if (prop.kind !== 'lift' || !prop.linkTo) continue;
+    if (prop.id === s.steppedOutOf) continue;
     if (distToProp(s.waddles, prop) > T.LIFT_RADIUS) continue;
     const tail = s.followers[s.followers.length - 1];
     if (dist(s.waddles, tail.pos) > T.LEASH_WARN) continue;

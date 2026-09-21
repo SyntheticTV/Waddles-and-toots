@@ -454,6 +454,27 @@ Each level is one room crossed entrance-to-exit, with an escape that suits the p
 > crowd properly moves — the diners in room two barely roamed, which is why
 > careless play scored *better* there than in the backyard.
 
+### Chapter two — rooms 7 to 12
+
+A chapter needs new *mechanics*, not new wallpaper. Rooms one to six spent most
+of the vocabulary — climb, thread, find the real door, start in the middle,
+survive without cover, survive density — so six more venues using the same verbs
+would be the same room in different clothes. Three new mechanics, one reframe,
+one twist, and a finale that tests the lot.
+
+| # | Room | What it adds |
+|---|---|---|
+| 7 | Airport Departures | **Width, and doors on the sides.** A terminal is the one place where nine identical doors is realistic rather than contrived |
+| 8 | Two-storey Mall | **The lift.** Two floors in one room, and a punchline the player sets off |
+| 9 | Municipal Pool | **Terrain that changes your speed.** The safe route is the slow one |
+| 10 | Movie Theatre | **The dark.** No new system: the room simply starts with the haze up, so the nose matters from the first second |
+| 11 | Three-storey Office | **The exit is on a floor you have to find** — the false-exit rule in three dimensions, over two lifts |
+| 12 | Wedding Reception | The finale. Everything at once, and a grandmother who says nothing |
+
+> The office replaced a county fair. The fair's idea — several animals, only one
+> of them the local who knows the way — is a good one and goes back on the
+> candidate list rather than being thrown away.
+
 ### Candidate levels
 
 - ~~**Elevator**~~ — folded into **Two-storey mall** (room 8). A lift on its own
@@ -470,6 +491,8 @@ Each level is one room crossed entrance-to-exit, with an escape that suits the p
 - **Airplane cabin** — one aisle, no escape, exit row at the end
 - **Wedding reception** — blame the fish course, and the grandma who says nothing
 - **Laundromat** — the one place where "something smells" is an actual mystery
+- **County fair** — several animals and only one of them knows the way; the rest
+  point nowhere, or just stare. "It's the goats!" (it is never the goats)
 - **Firehouse kitchen** — the chili pot, turnout gear, the boots; and *two different
   kinds of way out*, the pole and the bay door, which no room has had yet
 
