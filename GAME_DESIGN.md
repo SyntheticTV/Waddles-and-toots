@@ -441,7 +441,7 @@ Each level is one room crossed entrance-to-exit, with an escape that suits the p
 | 3 | School hallway | Gym fire doors | Classroom hamster | The lockers, the cafeteria, the science lab, a kid named Kevin |
 | 4 | Sunrise yoga | The fire door behind the mats | Studio cat | The hot room, the diffuser, the sock basket, Barbara's mat |
 | 5 | Sunset beach | The boardwalk ramp | Jetty otter | Seaweed, low tide, the bait bucket, Gary's catch |
-| 6 | Firehouse kitchen | The pole / bay door | The dalmatian | The chili pot, turnout gear, the boots |
+| 6 | Big Save Grocery | The loading bay doors | Escaped ferret | The durian, the fish counter, aisle four, the pet food |
 
 > The beach's local was written as a dolphin, and a dolphin would be better once
 > the locals have their own silhouettes. They all share the squirrel's for now,
@@ -456,7 +456,11 @@ Each level is one room crossed entrance-to-exit, with an escape that suits the p
 
 ### Candidate levels
 
-- **Elevator** — tiny room, worst possible place, floor-by-floor escape *(top pick)*
+- ~~**Elevator**~~ — folded into **Two-storey mall** (room 8). A lift on its own
+  is not a room you cross, so it would have replaced the game's verbs rather
+  than added one. As the link between two shopping floors it keeps every verb
+  and becomes a punchline the player sets off: three seconds sealed in a metal
+  box with a skunk and a stranger who has an opinion about it.
 - **Yoga class** — deep breaths. deep, terrible breaths. *(top pick)*
 - **Movie theater** — dark and hazy already, popcorn butter to blame
 - **Grocery store** — durians, seafood counter, cheese aisle: blame targets everywhere
@@ -466,6 +470,8 @@ Each level is one room crossed entrance-to-exit, with an escape that suits the p
 - **Airplane cabin** — one aisle, no escape, exit row at the end
 - **Wedding reception** — blame the fish course, and the grandma who says nothing
 - **Laundromat** — the one place where "something smells" is an actual mystery
+- **Firehouse kitchen** — the chili pot, turnout gear, the boots; and *two different
+  kinds of way out*, the pole and the bay door, which no room has had yet
 
 ### Which way is out
 
@@ -514,6 +520,27 @@ the distance with not a lungful of clean air on it.
 That is also why the fish are pulled toward the dry side. If they sat in the
 breeze the waterline would be one safe corridor and the room would have no
 decision in it.
+
+### Lifts, and rooms with two floors
+
+A room is still one room, climbed or descended. A building with two floors fits
+inside that by stacking the floors in world y with an impassable slab between
+them, and putting a **lift** at each end of the slab. Ride one, arrive at the
+other.
+
+The ride is a *beat*, not a door. Input stops, the doors shut across the whole
+screen, somebody says the wrong thing, the doors open somewhere else. Three
+seconds, paced around the line — which is the entire reason the lift exists.
+
+**The meter keeps climbing throughout**, because the one thing a sealed box does
+not do is get rid of a smell. Suspicion does not, because nobody in there is
+watching the crowd.
+
+The thing that makes it work is unglamorous: the followers chase Waddles'
+**trail**, not Waddles. Moving him a floor up without clearing the trail sends
+the other three walking at a ceiling and snaps the leash the instant the doors
+open. A ride therefore resets the trail and stacks the line at the far end — the
+same thing entering a room does.
 
 ### The local is always an animal
 

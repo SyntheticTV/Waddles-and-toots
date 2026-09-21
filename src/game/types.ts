@@ -63,7 +63,18 @@ export type PropKind =
   /** Startles Toots on contact: gurgle, poof, the meter jumps. */
   | 'bump'
   /** Just furniture. Blocks movement. */
-  | 'solid';
+  | 'solid'
+  /**
+   * A lift. Steps the whole group to its twin somewhere else in the room, which
+   * is how a building with two floors fits in one room that is climbed (§10).
+   *
+   * Both ends are `lift` props pointing at each other with `linkTo`. Riding is a
+   * beat, not a door: input is frozen, the doors shut, somebody says something
+   * they should not, and the doors open somewhere else. The meter keeps running
+   * throughout, because a sealed metal box with a skunk in it is the worst place
+   * in the game and it would be a waste not to charge for it.
+   */
+  | 'lift';
 
 export interface Prop {
   id: string;
@@ -72,6 +83,8 @@ export interface Prop {
   bounds: Rect;
   /** What the crowd calls it when they blame it. Blame props only. */
   blameLine?: string;
+  /** The id of the other end. Lifts only, and it must point back. */
+  linkTo?: string;
 }
 
 /** The animal who lives in this room and knows the way out. §9. */

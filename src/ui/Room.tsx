@@ -32,6 +32,7 @@ import { exitFacesUp } from '../game/types';
 import { hazeOpacity, huntHeat, stageFor } from '../game/stink';
 import {
   CAMERA_LOOK_AHEAD,
+  RIDE_MS,
   PROP_ANIM_FPS,
   HUNT_RADIUS,
   CAMERA_NEAR_ZOOM,
@@ -48,7 +49,8 @@ import { FishNugget, Poof, Pointer, Spark } from '../art/effects';
 import { clamp, withAlpha, wobble } from '../art/ink';
 import { PropArt } from '../art/props';
 import { ExitGate, Ground, Shadow, Vignette } from '../art/scenery';
-import { palette } from '../theme/palette';
+import { art, palette } from '../theme/palette';
+import { darken } from '../art/shading';
 
 interface Props {
   run: RunState;
@@ -336,6 +338,55 @@ export function Room({ run, width, height }: Props) {
             positions={[0, clearStop, Math.min(0.94, clearStop + 0.34), 1]}
           />
         </Rect>
+      ) : null}
+
+      {/*
+        The lift doors, shut across the whole screen while the group is riding.
+
+        They are doing two jobs. One is the joke — you are in a box and you can
+        see nothing, which is why the line lands. The other is practical: the
+        group is teleported to the other floor mid-ride and the camera jumps with
+        them, and a cut that nobody sees is not a cut at all.
+
+        Two rectangles sliding, and no offscreen layer.
+      */}
+      {run.riding ? (
+        <Group>
+          {(() => {
+            const left = run.riding.leftMs / RIDE_MS;
+            // Shut fast, open fast, stay shut through the middle.
+            const shut = Math.min(1, Math.min((1 - left) * 5, left * 5));
+            const half = (width / 2) * shut;
+            return (
+              <Group>
+                <Rect x={0} y={0} width={half} height={height}>
+                  <LinearGradient
+                    start={vec(0, 0)}
+                    end={vec(half, 0)}
+                    colors={[darken(art.metal, 0.4), art.metal]}
+                  />
+                </Rect>
+                <Rect x={width - half} y={0} width={half} height={height}>
+                  <LinearGradient
+                    start={vec(width - half, 0)}
+                    end={vec(width, 0)}
+                    colors={[art.metal, darken(art.metal, 0.44)]}
+                  />
+                </Rect>
+                {/* the seam, so two panels read as two doors */}
+                <Rect x={half - 2} y={0} width={4} height={height} color={art.metalDark} opacity={shut} />
+                <Rect
+                  x={width - half - 2}
+                  y={0}
+                  width={4}
+                  height={height}
+                  color={art.metalDark}
+                  opacity={shut}
+                />
+              </Group>
+            );
+          })()}
+        </Group>
       ) : null}
 
       {/* clouds rolling in from the far end, once it is really bad */}

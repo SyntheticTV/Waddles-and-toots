@@ -30,7 +30,7 @@ import { getSettings } from '../settings';
 import { dealer } from './bag';
 import { duckMusic, playSound, playVoiceClip, stopVoiceClips } from './audio';
 import { SCREAM_MS, SCREAMS } from './library';
-import { CAUGHT, DECOY_PAYOFF, NOTICED, PANIC, TOOT_REACTIONS } from './lines';
+import { CAUGHT, DECOY_PAYOFF, ELEVATOR_LINES, NOTICED, PANIC, TOOT_REACTIONS } from './lines';
 import { clipFor } from './voiceClips';
 
 /**
@@ -54,6 +54,12 @@ const PRIORITY = {
    * room has bigger problems.
    */
   toot: 3,
+  /**
+   * The stranger in the lift. High, because the ride is three seconds long and a
+   * line that waits for a gap has missed it — and because being stuck in there is
+   * the only thing happening.
+   */
+  lift: 4,
   panic: 4,
   caught: 5,
 } as const;
@@ -163,6 +169,8 @@ function pick(list: readonly string[]): string {
 
 /** Seventy-odd verdicts on a toot, dealt so every one of them is heard. */
 const dealToot = dealer(TOOT_REACTIONS);
+/** And whoever is unlucky enough to be in the lift. */
+const dealElevator = dealer(ELEVATOR_LINES);
 /** And the screams, so the same one never lands twice running either. */
 const dealScream = dealer(SCREAMS);
 let tootsUntilScream = SCREAM_EVERY[0];
@@ -371,6 +379,16 @@ export function reactToToot(): void {
       finished();
     }, SCREAM_MS);
   }, delay);
+}
+
+/**
+ * Somebody shares their feelings about the lift.
+ *
+ * Said on the way in rather than on the way out: the doors are shut for the
+ * whole ride, so this has to land while the player is looking at them.
+ */
+export function sayElevator(): void {
+  say(dealElevator(), 'lift');
 }
 
 /** They worked it out. */

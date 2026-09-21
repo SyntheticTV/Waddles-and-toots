@@ -145,6 +145,19 @@ export const PROP_ANIM_FPS = 12;
  */
 export const BLAME_COOLDOWN_SECONDS = 24;
 
+/**
+ * How long a lift ride takes, in milliseconds.
+ *
+ * Long enough for the doors to shut, somebody to say the wrong thing and the
+ * doors to open — that line is the entire reason the lift exists, so the ride is
+ * paced around it rather than around getting anywhere. Short enough that a
+ * player who has to ride three times does not resent it.
+ */
+export const RIDE_MS = 2600;
+
+/** How near a lift you have to be for the doors to count as open for you. */
+export const LIFT_RADIUS = 7;
+
 // -------------------------------------------------------------- movement
 
 /** Waddling. World units per second. */

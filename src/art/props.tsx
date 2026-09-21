@@ -2848,6 +2848,48 @@ const ThePass = () => (
   </Group>
 );
 
+
+/**
+ * A lift, with the doors standing open waiting for you.
+ *
+ * Drawn open rather than shut, because a shut lift reads as a cupboard and the
+ * player has to be able to tell at a glance that this one is a way through.
+ * While the group is actually riding, the doors are drawn shut across the whole
+ * screen by `Room` — that is a different thing and it lives there.
+ */
+const Lift = ({ t }: ArtProps) => (
+  <Group>
+    {/* the surround */}
+    <Ink d="M 2 6 L 98 6 L 98 118 L 2 118 Z" fill={art.metalDark} outline="#3E4347" weight={OUTLINE_FINE} />
+    {/* the car behind, lit */}
+    <Panel x={16} y={16} w={68} h={100} colors={[lighten(palette.paper, 0.05), darken(palette.paper, 0.2)]} r={1} />
+    {/* the doors, open */}
+    <Form
+      d="M 4 12 L 18 12 L 18 116 L 4 116 Z"
+      colors={[lighten(art.metal, 0.34), art.metal, darken(art.metal, 0.3)]}
+      positions={[0, 0.5, 1]}
+      from={[4, 12]}
+      to={[18, 116]}
+      outline="#5E6367"
+      weight={2}
+    />
+    <Form
+      d="M 82 12 L 96 12 L 96 116 L 82 116 Z"
+      colors={[lighten(art.metal, 0.2), art.metal, darken(art.metal, 0.36)]}
+      positions={[0, 0.5, 1]}
+      from={[82, 12]}
+      to={[96, 116]}
+      outline="#5E6367"
+      weight={2}
+    />
+    {/* the floor indicator, which is the only thing that moves */}
+    <Ink d="M 34 0 L 66 0 L 66 12 L 34 12 Z" fill={palette.ink} outline="#3E4347" weight={2} />
+    <Circle cx={44} cy={6} r={2.6} color={Math.sin(t * 2) > 0 ? palette.nugget : darken(palette.nugget, 0.6)} />
+    <Circle cx={56} cy={6} r={2.6} color={Math.sin(t * 2) > 0 ? darken(palette.nugget, 0.6) : palette.nugget} />
+    <Sheen cx={26} cy={26} r={26} strength={0.3} />
+  </Group>
+);
+
 const BY_ID: Record<string, Entry> = {
   'potato-salad': { w: 100, h: 50, Art: PotatoSalad },
   grill: { w: 100, h: 80, Art: Grill },
@@ -3017,6 +3059,7 @@ const BY_ID: Record<string, Entry> = {
 /** Anything a level hasn't drawn yet still reads as what it does. */
 const BY_KIND: Record<PropKind, Entry> = {
   blame: { w: 100, h: 100, Art: GenericBlame },
+  lift: { w: 100, h: 120, Art: Lift },
   falseExit: { w: 100, h: 114, Art: FalseHatch },
   freshAir: { w: 100, h: 100, Art: GenericFreshAir },
   bump: { w: 100, h: 100, Art: GenericBump },
@@ -3025,6 +3068,7 @@ const BY_KIND: Record<PropKind, Entry> = {
 
 /** How much of a prop's own shadow falls on the ground, by kind. */
 const SHADOW: Record<PropKind, number> = {
+  lift: 0.3,
   falseExit: 0.3,
   solid: 0.34,
   blame: 0.28,

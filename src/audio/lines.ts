@@ -121,6 +121,32 @@ export const TOOT_REACTIONS = [
   'Respectfully: no.',
 ] as const;
 
+/**
+ * What somebody says on the way between floors.
+ *
+ * The lift is the only place in the game where the player cannot move, and this
+ * is what they get for it: three seconds in a sealed metal box with a skunk and
+ * a stranger, and the stranger has an opinion. Dealt from a bag like the toot
+ * reactions, so a mall you ride four times is four different remarks.
+ */
+export const ELEVATOR_LINES = [
+  'Do not push that button again.',
+  "Oh. Oh, that one's going to leave a mark.",
+  'Man... let me OFF this thing.',
+  'Which one of us is going to say it?',
+  'Three floors. Three. We have three floors of this.',
+  'I am holding my breath until the doors open.',
+  'Sir, this is a lift.',
+  'Somebody has brought something in here with them.',
+  'I would like to take the stairs. I would like that very much.',
+  "We're all thinking it.",
+  'Is it going to be like this the whole way up?',
+  'I have made a terrible mistake.',
+  'Nobody move. Nobody breathe.',
+  "That's the fourth floor, and I'm getting out at the second.",
+  'Going down? I am certainly going down.',
+] as const;
+
 /** Every stock line in the game, for anything that needs the full list. */
 export const ALL_STOCK_LINES: readonly string[] = [
   ...NOTICED,
@@ -128,4 +154,5 @@ export const ALL_STOCK_LINES: readonly string[] = [
   ...CAUGHT,
   ...DECOY_PAYOFF,
   ...TOOT_REACTIONS,
+  ...ELEVATOR_LINES,
 ];

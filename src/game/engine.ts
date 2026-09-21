@@ -52,6 +52,8 @@ function centerOf(prop: Prop): Vec2 {
 
 export type GameEventKind =
   | 'poof'
+  | 'lift-in'
+  | 'lift-out'
   | 'nugget'
   | 'decoy'
   | 'leash-warning'
@@ -166,6 +168,14 @@ export interface RunState {
    * in seconds, because that is what `elapsed` is.
    */
   blamedAt: Record<string, number>;
+  /**
+   * The lift ride in progress, if any.
+   *
+   * While this is set the group takes no input at all: they are in a box. It is
+   * the one place in the game where the player cannot move, which is exactly why
+   * it is short and why somebody talks through the whole of it.
+   */
+  riding: { leftMs: number; to: Vec2; from: string } | null;
   /** True once every nugget is in and the gate has swung open. §11. */
   gateOpen: boolean;
   /** Standing in the gateway. With the gate shut, that is worth saying out loud. */
@@ -252,6 +262,7 @@ export function createRun(level: LevelSpec, opts: CreateRunOptions = {}): RunSta
     collected: 0,
     poofs: 0,
     blamedAt: {},
+    riding: null,
     gateOpen: level.nuggets.length === 0,
     atExit: false,
 
@@ -288,11 +299,49 @@ export function step(s: RunState, dtMs: number, input: InputState): void {
   const dt = dtMs / 1000;
   s.elapsed += dt;
 
+  /*
+   * A lift ride takes the whole step. Nothing moves, nothing is collected, and
+   * nobody can be caught — but the meter still climbs, because the one thing a
+   * sealed box does not do is get rid of a smell.
+   */
+  if (s.riding) {
+    s.riding.leftMs -= dtMs;
+    // The meter is the only thing that carries on. Nobody in here is watching
+    // them, so suspicion does not move — but the box gets worse by the second.
+    s.stink = advanceStink(s.stink, {
+      dt,
+      crowded: false,
+      decoyHolding: false,
+      inFreshAir: false,
+    });
+    if (s.riding.leftMs <= 0) {
+      const to = s.riding.to;
+      s.riding = null;
+      /*
+       * Put the whole line down at the far end, and forget the trail.
+       *
+       * The followers chase Waddles' *trail*, not Waddles — so leaving the old
+       * floor's breadcrumbs in place would send them walking off toward a
+       * ceiling and snap the leash. This is the same thing `createRun` does.
+       */
+      s.waddles = { ...to };
+      s.trail = [{ ...to }];
+      s.followers.forEach((f, i) => {
+        f.pos = { x: to.x, y: to.y - (i + 1) * T.LINE_SPACING * 0.4 };
+        f.moving = false;
+      });
+      s.leashBroken = false;
+      s.events.push({ kind: 'lift-out', at: { ...to } });
+    }
+    return;
+  }
+
   moveWaddles(s, dt, dtMs, input);
   followTheLeader(s, dt);
   collectNuggets(s);
   checkFreshAir(s, dt);
   checkBumps(s, dtMs);
+  checkLift(s);
   tickDecoy(s, dtMs, input);
   moveCrowd(s, dt);
   tickStink(s, dt);
@@ -708,6 +757,34 @@ function tickStink(s: RunState, dt: number): void {
   }
 
   if (s.blame && s.blame.leftMs <= 0 && s.decoyHoldMs <= 0) s.blame = null;
+}
+
+/**
+ * Walking into a lift with the group behind you.
+ *
+ * The whole line has to be aboard — a lift that leaves half the group on the
+ * wrong floor would be the single most frustrating thing in the game, and the
+ * leash already says they travel together.
+ */
+function checkLift(s: RunState): void {
+  if (s.riding) return;
+  for (const prop of s.level.props) {
+    if (prop.kind !== 'lift' || !prop.linkTo) continue;
+    if (distToProp(s.waddles, prop) > T.LIFT_RADIUS) continue;
+    const tail = s.followers[s.followers.length - 1];
+    if (dist(s.waddles, tail.pos) > T.LEASH_WARN) continue;
+
+    const other = s.level.props.find((p) => p.id === prop.linkTo);
+    if (!other) continue;
+    s.riding = {
+      leftMs: T.RIDE_MS,
+      to: { x: other.bounds.x + other.bounds.width / 2, y: other.bounds.y - 4 },
+      from: prop.id,
+    };
+    s.sliding = false;
+    s.events.push({ kind: 'lift-in', at: centerOf(prop) });
+    return;
+  }
 }
 
 // -------------------------------------------------------------- the local

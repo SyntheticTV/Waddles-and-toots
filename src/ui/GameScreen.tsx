@@ -23,7 +23,7 @@ import {
 import { enterGame, followRun, leaveGame, playSound } from '../audio/audio';
 import { SOUND_FOR_EVENT } from '../audio/library';
 import { recordRun } from '../progress';
-import { reactToToot, sayAnimal, sayBlame, sayCaught, sayDecoy } from '../audio/voices';
+import { reactToToot, sayAnimal, sayBlame, sayCaught, sayDecoy, sayElevator } from '../audio/voices';
 import { DECOY_COOLDOWN_MS, SLIDE_MAX_MS } from '../game/tuning';
 import type { LevelSpec } from '../game/types';
 import { palette } from '../theme/palette';
@@ -276,6 +276,8 @@ function drainEvents(events: GameEvent[]): void {
     if (e.kind === 'local-asleep' && e.text) sayAnimal(e.text);
     // Somebody works out what they just smelled, a few seconds too late.
     if (e.kind === 'poof') reactToToot();
+    // And whoever is in the lift has something to say about all this.
+    if (e.kind === 'lift-in') sayElevator();
 
     switch (e.kind) {
       case 'poof':
