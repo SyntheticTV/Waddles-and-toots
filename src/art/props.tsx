@@ -3102,6 +3102,313 @@ const ShoeTrays = ({ t }: ArtProps) => (
   </Group>
 );
 
+
+/** The tannoy, which has given up being specific. */
+const Tannoy = ({ t }: ArtProps) => (
+  <Group>
+    <Stroke d="M 50 116 L 50 52" color={art.metalDark} weight={4} />
+    <Form
+      d="M 30 20 L 70 6 L 70 50 L 30 36 Z"
+      colors={[lighten(art.metal, 0.3), art.metal, darken(art.metal, 0.34)]}
+      positions={[0, 0.45, 1]}
+      from={[30, 6]}
+      to={[70, 50]}
+      outline="#5E6367"
+      weight={OUTLINE_FINE}
+    />
+    <Ink d="M 24 22 L 32 18 L 32 38 L 24 34 Z" fill={art.charcoal} outline="#2E2C28" weight={2} />
+    {/* it is saying something, and has been for a while */}
+    {[0, 1, 2].map((i) => (
+      <Stroke
+        key={i}
+        d={`M ${76 + i * 7} ${20 + i * 2} q ${5 + i * 2} ${8 - i} 0 ${16 + i * 2}`}
+        color={palette.inkSoft}
+        weight={2.6 - i * 0.4}
+        opacity={0.3 + 0.35 * Math.sin(t * 4 - i)}
+      />
+    ))}
+    <Sheen cx={40} cy={18} r={18} strength={0.3} />
+  </Group>
+);
+
+// ------------------------------------------------------------------ the mall
+//
+// A mall is shop frontage and signage, so the units are deliberately plain —
+// one drawing repeated twelve times — and every *blame* prop is a strong
+// silhouette with one saturated colour, so the things worth looking at are the
+// things the crowd is shouting about.
+
+/** A shop unit: a window, a sign over it, and something for sale behind. */
+const ShopFront = () => (
+  <Group>
+    <Panel x={2} y={4} w={96} h={14} colors={[lighten(art.wood, 0.2), darken(art.wood, 0.28)]} r={2} />
+    {/* the sign, lit, saying nothing in particular */}
+    {[0, 1, 2].map((i) => (
+      <Rect key={i} x={14 + i * 26} y={8} width={18} height={6} color={palette.paper} opacity={0.7} />
+    ))}
+    <Panel x={4} y={18} w={92} h={34} colors={[palette.breeze, darken(palette.breeze, 0.26)]} r={1} />
+    {/* stock in the window */}
+    {[0, 1, 2, 3].map((i) => (
+      <Rect
+        key={`s${i}`}
+        x={12 + i * 21}
+        y={26}
+        width={14}
+        height={18}
+        color={['#C9542F', '#D99B2B', '#6E9B47', '#8C7BB0'][i]}
+        opacity={0.85}
+      />
+    ))}
+    <Stroke d="M 3 52 L 97 52" color={darken(art.wood, 0.4)} weight={2.5} />
+    <Sheen cx={22} cy={22} r={26} strength={0.26} />
+  </Group>
+);
+
+/**
+ * The floor slab between the two storeys.
+ *
+ * Deliberately blank and heavy: it is the one thing in the room that cannot be
+ * walked through, and it has to read as structure rather than as furniture.
+ */
+const FloorSlab = () => (
+  <Group>
+    {/* `Form` rather than a raw gradient: props.tsx draws through the shading
+        kit, and reaching past it for a LinearGradient means importing Skia
+        primitives this file has deliberately never needed. */}
+    <Form
+      d="M 0 0 L 100 0 L 100 24 L 0 24 Z"
+      colors={[lighten(art.charcoal, 0.34), art.charcoal, darken(art.charcoal, 0.2)]}
+      positions={[0, 0.4, 1]}
+      from={[0, 0]}
+      to={[0, 24]}
+    />
+    {/* a handrail along the upstairs edge, which is what says "balcony" */}
+    <Rect x={0} y={0} width={100} height={3} color={lighten(art.metal, 0.3)} />
+    <Rect x={0} y={21} width={100} height={3} color={darken(art.charcoal, 0.4)} />
+    {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+      <Rect key={i} x={6 + i * 12} y={3} width={2.5} height={9} color={art.metalDark} opacity={0.8} />
+    ))}
+  </Group>
+);
+
+/** The fragrance counter, and somebody testing all of it. */
+const FragranceCounter = ({ t }: ArtProps) => (
+  <Group>
+    <Panel x={4} y={38} w={92} h={26} colors={[lighten(palette.white, 0.02), darken(palette.paper, 0.2)]} r={2} />
+    {[
+      [14, '#D96A9E'],
+      [36, palette.nugget],
+      [58, '#9E7ED9'],
+      [78, palette.breeze],
+    ].map(([x, c], i) => (
+      <Group key={i}>
+        <Ink
+          d={`M ${x} 22 q 6 -4 12 0 l 0 16 q -6 3 -12 0 Z`}
+          fill={c as string}
+          outline="#6E5A70"
+          weight={2}
+        />
+        <Rect x={Number(x) + 4} y={16} width={4} height={7} color={art.metalDark} />
+      </Group>
+    ))}
+    <Stroke d="M 6 64 L 94 64" color="#A89C82" weight={2.5} />
+    {/* all four at once, which is the problem */}
+    <Whiff x={24} y={10} t={t} />
+    <Whiff x={50} y={4} t={t} phase={1.3} />
+    <Whiff x={76} y={8} t={t} phase={2.4} />
+    <Sheen cx={20} cy={30} r={22} strength={0.32} />
+  </Group>
+);
+
+/** A pretzel, turning under a lamp since ten this morning. */
+const PretzelStand = ({ t }: ArtProps) => (
+  <Group>
+    <Panel x={4} y={34} w={92} h={26} colors={[darken(palette.alarm, 0.1), darken(palette.alarm, 0.44)]} r={2} />
+    <Ink d="M 8 20 L 92 20 L 92 30 L 8 30 Z" fill={art.metalDark} outline="#3E4347" weight={2} />
+    {[20, 46, 72].map((x, i) => (
+      <Rect key={i} x={x} y={22} width={12} height={4} color={palette.nugget} opacity={0.95} />
+    ))}
+    {/* the pretzels themselves */}
+    {[26, 52].map((x, i) => (
+      <Group key={i}>
+        <Circle cx={x} cy={42} r={9} color="#B97A32" />
+        <Circle cx={x} cy={42} r={9} color="#7A4E18" style="stroke" strokeWidth={2.4} />
+        <Circle cx={x} cy={42} r={3.4} color={darken('#B97A32', 0.3)} />
+      </Group>
+    ))}
+    <Whiff x={70} y={14} t={t} />
+    <Whiff x={40} y={8} t={t} phase={1.6} />
+  </Group>
+);
+
+/** The fountain. Coins, and water of a certain age. */
+const MallFountain = ({ t }: ArtProps) => (
+  <Group>
+    <Ink
+      d="M 6 36 q 44 -14 88 0 q 4 18 -8 24 q -36 8 -72 0 q -12 -6 -8 -24 Z"
+      fill={lighten(art.metal, 0.24)}
+      outline="#5E6367"
+      weight={OUTLINE_FINE}
+    />
+    {/* the water, which has been in there a while */}
+    <Ink
+      d="M 14 40 q 36 -10 72 0 q 2 12 -8 16 q -28 6 -56 0 q -10 -4 -8 -16 Z"
+      fill="#8FA88E"
+      outline="#5E7A5E"
+      weight={2}
+    />
+    {[28, 50, 70].map((x, i) => (
+      <Circle key={i} cx={x} cy={48 + (i % 2) * 3} r={2.6} color={palette.nugget} opacity={0.9} />
+    ))}
+    {/* and the jet, still going */}
+    <Stroke d="M 50 38 q -4 -14 0 -22" color={palette.breeze} weight={4} opacity={0.75} />
+    <Whiff x={28} y={20} t={t} />
+    <Whiff x={70} y={16} t={t} phase={1.4} />
+  </Group>
+);
+
+/** A candle shop with every candle lit. */
+const CandleShop = ({ t }: ArtProps) => (
+  <Group>
+    <Panel x={4} y={40} w={92} h={24} colors={[lighten(art.wood, 0.2), darken(art.wood, 0.3)]} r={2} />
+    {[
+      [12, 22, '#D96A5A'],
+      [30, 16, '#E8C25E'],
+      [48, 20, '#8FA84E'],
+      [66, 14, '#9E7ED9'],
+      [82, 24, '#D96A9E'],
+    ].map(([x, y, c], i) => (
+      <Group key={i}>
+        <Ink
+          d={`M ${x} ${y} L ${Number(x) + 12} ${y} L ${Number(x) + 12} 42 L ${x} 42 Z`}
+          fill={c as string}
+          outline="#6E5A44"
+          weight={2}
+        />
+        {/* the flame */}
+        <Circle
+          cx={Number(x) + 6}
+          cy={Number(y) - 4 + Math.sin(t * 6 + i) * 1.2}
+          r={3}
+          color={palette.nugget}
+        />
+      </Group>
+    ))}
+    <Whiff x={22} y={6} t={t} />
+    <Whiff x={56} y={2} t={t} phase={1.2} />
+    <Whiff x={84} y={8} t={t} phase={2.2} />
+  </Group>
+);
+
+/** The pet shop. It is always going to be the pet shop. */
+const PetShop = ({ t }: ArtProps) => (
+  <Group>
+    <Panel x={4} y={30} w={92} h={34} colors={[lighten(art.wood, 0.16), darken(art.wood, 0.34)]} r={2} />
+    {/* cages, with something in each */}
+    {[10, 38, 66].map((x, i) => (
+      <Group key={i}>
+        <Ink
+          d={`M ${x} 34 L ${x + 24} 34 L ${x + 24} 58 L ${x} 58 Z`}
+          fill={darken(art.wood, 0.5)}
+          outline="#4A2E1A"
+          weight={2}
+        />
+        {[0, 1, 2, 3].map((k) => (
+          <Rect key={k} x={x + 4 + k * 6} y={34} width={1.6} height={24} color={art.metal} opacity={0.8} />
+        ))}
+        <Circle cx={x + 12} cy={48} r={6} color={['#C9B489', '#E8E0D2', '#B97A32'][i]} />
+      </Group>
+    ))}
+    <Ink d="M 10 18 L 90 18 L 90 30 L 10 30 Z" fill={palette.alarm} outline="#8E3A2E" weight={2} />
+    <Whiff x={28} y={10} t={t} />
+    <Whiff x={64} y={4} t={t} phase={1.5} />
+    <Whiff x={46} y={8} t={t} phase={2.6} />
+  </Group>
+);
+
+/** A shoe shop, and four hundred pairs of feet. */
+const ShoeShop = ({ t }: ArtProps) => (
+  <Group>
+    <Panel x={4} y={36} w={92} h={26} colors={[lighten(art.metal, 0.22), darken(art.metal, 0.3)]} r={2} />
+    {[0, 1, 2].map((r) => (
+      <Stroke key={r} d={`M 8 ${42 + r * 8} L 92 ${42 + r * 8}`} color={art.metalDark} weight={2} opacity={0.6} />
+    ))}
+    {[
+      [14, 40, '#8C4A3E'],
+      [40, 48, art.charcoal],
+      [66, 40, '#3E6E8C'],
+      [30, 56, '#4E6E4A'],
+    ].map(([x, y, c], i) => (
+      <Ink
+        key={i}
+        d={`M ${x} ${y} q 8 -8 18 -4 q 4 6 -2 8 q -10 2 -16 -4 Z`}
+        fill={c as string}
+        outline="#2E2820"
+        weight={1.8}
+      />
+    ))}
+    <Whiff x={30} y={22} t={t} />
+    <Whiff x={68} y={18} t={t} phase={1.7} />
+  </Group>
+);
+
+/** The bins behind the food court, having a day. */
+const FoodBins = ({ t }: ArtProps) => (
+  <Group>
+    {[
+      [6, '#5E6B4A'],
+      [54, '#4E5C3E'],
+    ].map(([x, c], i) => (
+      <Group key={i}>
+        <Form
+          d={`M ${x} 34 L ${Number(x) + 40} 34 L ${Number(x) + 35} 80 L ${Number(x) + 5} 80 Z`}
+          colors={[lighten(c as string, 0.3), c as string, darken(c as string, 0.34)]}
+          positions={[0, 0.45, 1]}
+          from={[Number(x), 34]}
+          to={[Number(x) + 40, 80]}
+          outline="#333C28"
+          weight={OUTLINE_FINE}
+        />
+        <Ink
+          d={`M ${Number(x) - 3} 26 L ${Number(x) + 43} 26 L ${Number(x) + 41} 36 L ${Number(x) - 1} 36 Z`}
+          fill={darken(c as string, 0.26)}
+          outline="#333C28"
+          weight={2}
+        />
+      </Group>
+    ))}
+    {/* the lid is not going back on */}
+    <Ink d="M 54 16 L 84 8 L 88 20 L 58 28 Z" fill={darken('#4E5C3E', 0.3)} outline="#333C28" weight={2} />
+    <Whiff x={24} y={16} t={t} />
+    <Whiff x={48} y={8} t={t} phase={1.3} />
+    <Whiff x={76} y={12} t={t} phase={2.4} />
+  </Group>
+);
+
+/** A kiosk selling something that is not for breathing. */
+const VapeKiosk = ({ t }: ArtProps) => (
+  <Group>
+    <Panel x={6} y={34} w={88} h={30} colors={[darken(art.charcoal, 0.06), darken(art.charcoal, 0.4)]} r={3} />
+    <Panel x={12} y={40} w={76} h={16} colors={['#6E5ACF', '#3E2E8C']} r={2} />
+    {[0, 1, 2, 3].map((i) => (
+      <Rect key={i} x={18 + i * 18} y={44} width={8} height={8} color={palette.breeze} opacity={0.8} />
+    ))}
+    {/* a cloud that is nobody's business but everybody's problem */}
+    {[0, 1, 2].map((i) => (
+      <Circle
+        key={`c${i}`}
+        cx={30 + i * 20}
+        cy={22 - i * 4 + Math.sin(t * 2 + i) * 2}
+        r={10 - i}
+        color={palette.paper}
+        opacity={0.5}
+      />
+    ))}
+    <Whiff x={66} y={12} t={t} />
+    <Sheen cx={24} cy={40} r={22} strength={0.28} />
+  </Group>
+);
+
 const BY_ID: Record<string, Entry> = {
   'potato-salad': { w: 100, h: 50, Art: PotatoSalad },
   grill: { w: 100, h: 80, Art: Grill },
@@ -3253,6 +3560,7 @@ const BY_ID: Record<string, Entry> = {
   'pet-food': { w: 100, h: 64, Art: PetFood },
   'abandoned-trolley': { w: 100, h: 78, Art: AbandonedTrolley },
   'bleach-aisle': { w: 100, h: 70, Art: BleachAisle },
+  tannoy: { w: 100, h: 117, Art: Tannoy },
   'chiller-1': { w: 100, h: 100, Art: Chiller },
   'chiller-2': { w: 100, h: 100, Art: Chiller },
   'chiller-3': { w: 100, h: 100, Art: Chiller },
@@ -3292,6 +3600,30 @@ const BY_ID: Record<string, Entry> = {
   'food-court': { w: 100, h: 57, Art: FoodCourt },
   'lost-luggage': { w: 100, h: 58, Art: LostLuggage },
   'shoe-trays': { w: 100, h: 55, Art: ShoeTrays },
+  // --- the mall ---
+  'shops1-l0': { w: 100, h: 62, Art: ShopFront },
+  'shops1-r0': { w: 100, h: 62, Art: ShopFront },
+  'shops1-l1': { w: 100, h: 62, Art: ShopFront },
+  'shops1-r1': { w: 100, h: 62, Art: ShopFront },
+  'shops1-l2': { w: 100, h: 62, Art: ShopFront },
+  'shops1-r2': { w: 100, h: 62, Art: ShopFront },
+  'shops2-l0': { w: 100, h: 62, Art: ShopFront },
+  'shops2-r0': { w: 100, h: 62, Art: ShopFront },
+  'shops2-l1': { w: 100, h: 62, Art: ShopFront },
+  'shops2-r1': { w: 100, h: 62, Art: ShopFront },
+  'shops2-l2': { w: 100, h: 62, Art: ShopFront },
+  'shops2-r2': { w: 100, h: 62, Art: ShopFront },
+  slab: { w: 100, h: 24, Art: FloorSlab },
+  'lift-down': { w: 100, h: 113, Art: Lift },
+  'lift-up': { w: 100, h: 113, Art: Lift },
+  'fragrance-counter': { w: 100, h: 80, Art: FragranceCounter },
+  'pretzel-stand': { w: 100, h: 64, Art: PretzelStand },
+  'mall-fountain': { w: 100, h: 64, Art: MallFountain },
+  'candle-shop': { w: 100, h: 67, Art: CandleShop },
+  'pet-shop': { w: 100, h: 73, Art: PetShop },
+  'shoe-shop': { w: 100, h: 58, Art: ShoeShop },
+  'food-bins': { w: 100, h: 80, Art: FoodBins },
+  'vape-kiosk': { w: 100, h: 70, Art: VapeKiosk },
 };
 
 /** Anything a level hasn't drawn yet still reads as what it does. */

@@ -104,6 +104,12 @@ export const cornerGrocery: LevelSpec = {
       blameLine: 'Whose trolley is this? WHOSE TROLLEY IS THIS?',
     },
     {
+      id: 'tannoy',
+      kind: 'blame',
+      bounds: { x: 46, y: 186, width: 12, height: 14 },
+      blameLine: 'Cleanup on aisle one. And two. And three. Cleanup on aisles one through fifty.',
+    },
+    {
       id: 'bleach-aisle',
       kind: 'blame',
       bounds: { x: 20, y: 441, width: 20, height: 14 },

@@ -464,8 +464,8 @@ one twist, and a finale that tests the lot.
 
 | # | Room | What it adds |
 |---|---|---|
-| 7 | Airport Departures | **Width, and doors on the sides.** A terminal is the one place where nine identical doors is realistic rather than contrived |
-| 8 | Two-storey Mall | **The lift.** Two floors in one room, and a punchline the player sets off |
+| 7 | Gate 14 Departures | **Width, and doors on the sides.** A terminal is the one place where nine identical doors is realistic rather than contrived. *Built* |
+| 8 | Two Pines Mall | **The lift.** Two floors in one room, and a punchline the player sets off. *Built* |
 | 9 | Municipal Pool | **Terrain that changes your speed.** The safe route is the slow one |
 | 10 | Movie Theatre | **The dark.** No new system: the room simply starts with the haze up, so the nose matters from the first second |
 | 11 | Three-storey Office | **The exit is on a floor you have to find** — the false-exit rule in three dimensions, over two lifts |

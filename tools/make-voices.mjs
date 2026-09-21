@@ -134,6 +134,14 @@ const CAST_BY_ID = {
    * fifteen-voice pool can hand out cleanly — three of them collided. Pinned so
    * the supermarket sounds like eleven different shoppers.
    */
+  /*
+   * Room eight. Only lines heard *in the same room* need pinning — the lift
+   * remarks and the toot reactions are spread across a whole game, so a repeat
+   * there is nobody's problem.
+   */
+  'two-pines-mall--pet-shop': 'Zubenelgenubi',
+  'two-pines-mall--vape-kiosk': 'Laomedeia',
+
   /* Room seven: two pairs landed together out of eight. */
   'gate-14-departures--food-court': 'Laomedeia',
   'gate-14-departures--toilet-door': 'Sadachbia',
@@ -236,6 +244,20 @@ function collectLines() {
   for (const text of lines.TOOT_REACTIONS) {
     const id = `toot--${hash(text)}`;
     out.push({ id, text, role: 'toot', voice: castFor(id) });
+  }
+
+  /*
+   * And whoever is stuck in the lift. Same content-hashed ids as the toot
+   * reactions and for the same reason: this list is going to be added to, and
+   * casting by position would re-record the lot every time it is.
+   *
+   * Adding a new bag of lines to `lines.ts` is not enough on its own — this
+   * function is the list of what gets recorded, and anything missing from it
+   * quietly falls back to the device voice forever.
+   */
+  for (const text of lines.ELEVATOR_LINES) {
+    const id = `lift--${hash(text)}`;
+    out.push({ id, text, role: 'lift', voice: castFor(id) });
   }
 
   out.push({
