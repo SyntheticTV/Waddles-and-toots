@@ -134,6 +134,10 @@ const CAST_BY_ID = {
    * fifteen-voice pool can hand out cleanly — three of them collided. Pinned so
    * the supermarket sounds like eleven different shoppers.
    */
+  /* Room seven: two pairs landed together out of eight. */
+  'gate-14-departures--food-court': 'Laomedeia',
+  'gate-14-departures--toilet-door': 'Sadachbia',
+
   'big-save-grocery--rotisserie': 'Zephyr',
   'big-save-grocery--abandoned-trolley': 'Aoede',
   'big-save-grocery--bleach-aisle': 'Zubenelgenubi',

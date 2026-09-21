@@ -1,3 +1,5 @@
+import { WORLD_WIDTH } from './tuning';
+
 /**
  * Shared shapes for the game. See GAME_DESIGN.md for what each of these means
  * in play — this file is only the data side of it.
@@ -34,16 +36,45 @@ export interface Rect {
  */
 export type SceneryKind = 'yard' | 'indoor' | 'beach';
 
+/** How wide this room is. Most are the standard width; some are not. */
+export function roomWidth(level: LevelSpec): number {
+  return level.width ?? WORLD_WIDTH;
+}
+
+/** Which wall the way out is in. */
+export type ExitSide = 'top' | 'bottom' | 'left' | 'right';
+
 /**
- * Which end of the room the way out is at.
+ * Which wall the way out is in.
  *
  * Inferred from where the exit actually sits rather than authored, so a level
  * cannot say one thing and place another. Rooms one to three all climb; from
  * room four the group starts in the middle and the way out can be behind them,
- * which is the whole reason the local is worth finding (§10).
+ * and from room seven it can be in a side wall — which is the whole reason the
+ * local is worth finding (§10).
+ *
+ * Whichever wall it is flush against wins. A room has one way out, so there is
+ * never a tie to break.
  */
+export function exitSide(level: LevelSpec): ExitSide {
+  const w = roomWidth(level);
+  const e = level.exit;
+  const gaps = {
+    bottom: e.y,
+    top: level.height - (e.y + e.height),
+    left: e.x,
+    right: w - (e.x + e.width),
+  };
+  let best: ExitSide = 'top';
+  for (const side of ['top', 'bottom', 'left', 'right'] as ExitSide[]) {
+    if (gaps[side] < gaps[best]) best = side;
+  }
+  return best;
+}
+
+/** True when the group is climbing rather than descending or going sideways. */
 export function exitFacesUp(level: LevelSpec): boolean {
-  return level.exit.y + level.exit.height / 2 > level.height / 2;
+  return exitSide(level) === 'top';
 }
 
 /** How far along the stink meter the crowd is. See GAME_DESIGN.md §5. */
@@ -113,8 +144,15 @@ export interface LevelSpec {
   name: string;
   /** How the group gets out: "the side gate", "the kitchen back door". */
   exitLabel: string;
-  /** Room height in world units. Width is always WORLD_WIDTH. */
+  /** Room height in world units. */
   height: number;
+  /**
+   * Room width in world units. Defaults to `WORLD_WIDTH`, which is also the
+   * width the camera's zoom is calibrated against — so a wider room is genuinely
+   * *wider to walk*, not the same room drawn smaller. Characters stay the same
+   * size on screen whatever the room measures.
+   */
+  width?: number;
   /** What the floor of this room is. Defaults to 'yard'. */
   scenery?: SceneryKind;
   /** Where the conga line comes in, at the bottom. */

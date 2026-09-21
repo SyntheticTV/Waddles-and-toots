@@ -28,6 +28,7 @@ import {
 } from '@shopify/react-native-skia';
 
 import { WORLD_WIDTH } from '../game/tuning';
+import { roomWidth as levelWidth, type ExitSide } from '../game/types';
 import type { LevelSpec, Rect as WorldRect, SceneryKind } from '../game/types';
 import { art, palette } from '../theme/palette';
 import { OUTLINE_FINE, hash01, path, wobble } from './ink';
@@ -65,7 +66,12 @@ export const Ground = React.memo(function Ground({ level, width, height, scale }
   const roomHeight = level.height * scale;
   // Zoomed in, the room is wider than the screen and the camera pans across it,
   // so everything horizontal is drawn to the room rather than to the viewport.
-  const roomWidth = WORLD_WIDTH * scale;
+  /*
+   * This room's own width, not the standard one — the ground has to reach the
+   * far wall of a terminal as readily as the far fence of a yard.
+   */
+  const worldWidth = levelWidth(level);
+  const roomWidth = worldWidth * scale;
 
   const indoors = kind === 'indoor';
   const beach = kind === 'beach';
@@ -120,7 +126,7 @@ export const Ground = React.memo(function Ground({ level, width, height, scale }
       );
       // the short joins, offset every other row
       const step = 34;
-      for (let x = (row % 2 ? step / 2 : 0) + 6; x < WORLD_WIDTH; x += step) {
+      for (let x = (row % 2 ? step / 2 : 0) + 6; x < worldWidth; x += step) {
         boards.push(
           <Rect
             key={`join-${y}-${x}`}
@@ -175,7 +181,7 @@ export const Ground = React.memo(function Ground({ level, width, height, scale }
   if (beach) {
     const count = Math.round(level.height / 9);
     for (let i = 0; i < count; i++) {
-      const wx = 9 + hash01(i * 2.1) * (WORLD_WIDTH - 12);
+      const wx = 9 + hash01(i * 2.1) * (worldWidth - 12);
       const wy = hash01(i * 5.7 + 3) * level.height;
       const roll = hash01(i * 9.3);
       const r = (0.5 + hash01(i * 3.3) * 0.7) * scale;
@@ -210,7 +216,7 @@ export const Ground = React.memo(function Ground({ level, width, height, scale }
   } else if (!indoors) {
     const count = Math.round(level.height / 6);
     for (let i = 0; i < count; i++) {
-      const wx = 2 + hash01(i * 2.1) * (WORLD_WIDTH - 4);
+      const wx = 2 + hash01(i * 2.1) * (worldWidth - 4);
       const wy = hash01(i * 5.7 + 3) * level.height;
       const roll = hash01(i * 9.3);
       const size = (0.65 + hash01(i * 3.3) * 0.7) * scale * 0.32;
@@ -248,7 +254,7 @@ export const Ground = React.memo(function Ground({ level, width, height, scale }
   {
     const count = Math.round(level.height / 60);
     for (let i = 0; i < count; i++) {
-      const wx = 6 + hash01(i * 11.7) * (WORLD_WIDTH - 12);
+      const wx = 6 + hash01(i * 11.7) * (worldWidth - 12);
       const wy = hash01(i * 4.3 + 1) * level.height;
       const r = (14 + hash01(i * 6.1) * 16) * scale;
       dapples.push(
@@ -320,12 +326,127 @@ export const Ground = React.memo(function Ground({ level, width, height, scale }
       {outdoors ? (
         <Group>
           <SideFence x={0} height={level.height} scale={scale} toY={toY} castRight />
-          <SideFence x={(WORLD_WIDTH - 4) * scale} height={level.height} scale={scale} toY={toY} />
+          <SideFence x={(worldWidth - 4) * scale} height={level.height} scale={scale} toY={toY} />
         </Group>
       ) : null}
     </Group>
   );
 });
+
+/**
+ * A way out in a side wall: a lit corridor mouth rather than a pair of gates.
+ *
+ * Deliberately not the gate rotated. Everything here is still lit from the upper
+ * left — the jamb catches the light on its top edge, the floor of the corridor
+ * falls away to the lower right — which a rotation could not have managed.
+ */
+function SideWayOut({
+  exit,
+  scale,
+  toScreenX,
+  toScreenY,
+  t,
+  openness,
+  dimmed,
+  side,
+}: {
+  exit: WorldRect;
+  scale: number;
+  toScreenX: (n: number) => number;
+  toScreenY: (n: number) => number;
+  t: number;
+  openness: number;
+  dimmed: boolean;
+  side: 'left' | 'right';
+}) {
+  const x = toScreenX(exit.x);
+  const w = exit.width * scale;
+  const yTop = toScreenY(exit.y + exit.height);
+  const h = exit.height * scale;
+  const open = openness > 0.02;
+  const pulse = wobble(t, 3.2, 3);
+  /** Screen x of the wall, and which way "out" points from it. */
+  const out = side === 'left' ? -1 : 1;
+  const mouth = side === 'left' ? x : x + w;
+  const lane = 14 * scale;
+
+  return (
+    <Group>
+      {/* the corridor beyond, bright once it is open */}
+      <Rect
+        x={Math.min(mouth, mouth + out * lane)}
+        y={yTop}
+        width={lane + w}
+        height={h}
+      >
+        <LinearGradient
+          start={vec(mouth + out * lane, 0)}
+          end={vec(mouth - out * w, 0)}
+          colors={
+            open
+              ? ['#FFFDF4', palette.paper, darken(palette.paper, 0.08)]
+              : [darken(palette.paper, 0.24), darken(palette.paper, 0.32)]
+          }
+          positions={open ? [0, 0.6, 1] : [0, 1]}
+        />
+      </Rect>
+
+      {open ? (
+        <Group opacity={Math.min(1, openness)}>
+          <Sheen cx={mouth} cy={yTop + h / 2} r={h * 0.8} color="#FFF3CE" strength={0.85} />
+        </Group>
+      ) : null}
+
+      {/* the jamb: a lit top edge and a shadowed underside, as everything has */}
+      <Rect x={mouth - (out < 0 ? 0 : 3 * scale)} y={yTop - 3 * scale} width={3 * scale} height={h + 6 * scale}>
+        <LinearGradient
+          start={vec(0, yTop - 3 * scale)}
+          end={vec(0, yTop + h)}
+          colors={[lighten(art.metal, 0.3), darken(art.metal, 0.3)]}
+        />
+      </Rect>
+      <Rect
+        x={Math.min(mouth, mouth + out * lane)}
+        y={yTop - 3 * scale}
+        width={lane + w}
+        height={3 * scale}
+        color={lighten(art.metal, 0.24)}
+      />
+      <Rect
+        x={Math.min(mouth, mouth + out * lane)}
+        y={yTop + h}
+        width={lane + w}
+        height={3 * scale}
+        color={darken(art.metal, 0.36)}
+      />
+
+      {/* and the arrow, pointing out of the room */}
+      {open ? (
+        <Group
+          transform={
+            [
+              { translateX: x + w / 2 + out * pulse },
+              { translateY: yTop + h / 2 },
+              { scale: (scale / 3) * Math.min(1, openness * 1.4) },
+              { rotate: (out * Math.PI) / 2 },
+            ] as Transforms3d
+          }
+          opacity={dimmed ? 0.6 : 1}
+        >
+          <Form
+            d="M 0 -14 L 14 4 L 5 4 L 5 16 L -5 16 L -5 4 L -14 4 Z"
+            colors={[lighten(palette.stink, 0.3), palette.stink, palette.stinkDeep]}
+            positions={[0, 0.5, 1]}
+            from={[-10, -14]}
+            to={[10, 16]}
+            outline={palette.stinkDeep}
+            weight={3.4}
+          />
+        </Group>
+      ) : null}
+    </Group>
+  );
+}
 
 /**
  * The sea, down the left-hand edge of a beach room.
@@ -467,7 +588,7 @@ export function ExitGate({
   t,
   openness,
   dimmed,
-  facesUp = true,
+  side = 'top',
 }: {
   exit: WorldRect;
   scale: number;
@@ -479,7 +600,7 @@ export function ExitGate({
   /** True once the haze is thick enough that the gate is fading out. */
   dimmed: boolean;
   /**
-   * Whether the way out is at the top of the room or the bottom.
+   * Which wall the way out is in.
    *
    * Only four things actually care: which side the daylight spills out of,
    * where the leaves are hinged, which way they lean, and which way the arrow
@@ -488,14 +609,36 @@ export function ExitGate({
    * light it from below and break the one rule that keeps this room looking
    * like one room.
    */
-  facesUp?: boolean;
+  side?: ExitSide;
 }) {
+  const facesUp = side !== 'bottom';
   const x = toScreenX(exit.x);
   const w = exit.width * scale;
   const yTop = toScreenY(exit.y + exit.height);
   const h = exit.height * scale;
   const pulse = wobble(t, 3.2, 3);
   const open = openness > 0.02;
+
+  /*
+   * A way out in a *side* wall is a different object, not this one turned
+   * ninety degrees. Rotating would carry the lighting round with it and light
+   * the whole thing from the wrong corner, which is the one rule that keeps a
+   * room looking like a room. So it gets its own drawing.
+   */
+  if (side === 'left' || side === 'right') {
+    return (
+      <SideWayOut
+        exit={exit}
+        scale={scale}
+        toScreenX={toScreenX}
+        toScreenY={toScreenY}
+        t={t}
+        openness={openness}
+        dimmed={dimmed}
+        side={side}
+      />
+    );
+  }
   /** Screen y of the edge that faces out of the room, and of the one facing in. */
   const yOut = facesUp ? yTop : yTop + h;
   const yIn = facesUp ? yTop + h : yTop;

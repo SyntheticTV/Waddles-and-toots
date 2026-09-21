@@ -261,8 +261,15 @@ positions into shared values — don't move the rules into worklets.
   the group starts in the middle and the way out can be at either end, so ask
   `exitFacesUp(level)` rather than assuming the top. The camera, the gate art and
   the dog's nose all read it; anything new that cares about "forward" must too.
-  Rooms are still only ever climbed or descended — the width is fixed at
-  `WORLD_WIDTH` and a side exit is not supported yet.
+  From room seven the way out can be in a **side** wall too, so ask
+  `exitSide(level)` — `exitFacesUp` is now just a shorthand for `=== 'top'`.
+- **A room's width is `roomWidth(level)`, not `WORLD_WIDTH`.** Most rooms are the
+  standard hundred; the terminal is a hundred and sixty. `WORLD_WIDTH` stayed
+  behind as the width the camera's **zoom** is calibrated against, and that
+  distinction is the whole trick: dividing the zoom by the *actual* width would
+  make a wide room the same picture drawn smaller, rather than a bigger place to
+  walk across. Characters are the same size on screen in every room, and a wide
+  room simply means the camera has further to pan.
 - **Rooms are authored in world units,** `WORLD_WIDTH` (100) across and as tall as
   the level says, so a room plays the same on a phone and an iPad. Never author a
   level in pixels.

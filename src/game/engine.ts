@@ -7,7 +7,7 @@
  * day tested) without a device. See AGENTS.md.
  */
 
-import type { LevelSpec, Prop, RunOutcome, Vec2 } from './types';
+import { roomWidth, type LevelSpec, type Prop, type RunOutcome, type Vec2 } from './types';
 import {
   advanceStink,
   advanceSuspicion,
@@ -406,7 +406,7 @@ function moveWaddles(s: RunState, dt: number, dtMs: number, input: InputState): 
   const tryY = { x: s.waddles.x, y: next.y };
   if (!blocked(s, tryY)) s.waddles.y = tryY.y;
 
-  s.waddles.x = clamp(s.waddles.x, 3, T.WORLD_WIDTH - 3);
+  s.waddles.x = clamp(s.waddles.x, 3, roomWidth(s.level) - 3);
   s.waddles.y = clamp(s.waddles.y, 3, s.level.height - 2);
 
   const last = s.trail[s.trail.length - 1];
@@ -658,7 +658,7 @@ function moveCrowd(s: RunState, dt: number): void {
       p.pos.y += sy * step;
     }
 
-    p.pos.x = clamp(p.pos.x, 2, T.WORLD_WIDTH - 2);
+    p.pos.x = clamp(p.pos.x, 2, roomWidth(s.level) - 2);
     p.pos.y = clamp(p.pos.y, 0, s.level.height);
   }
 }
@@ -705,7 +705,7 @@ function tickDecoy(s: RunState, dtMs: number, input: InputState): void {
   const at = useScapegoat && pick
     ? centerOf(pick)
     : {
-        x: clamp(toots.x + (toots.x < T.WORLD_WIDTH / 2 ? 26 : -26), 4, T.WORLD_WIDTH - 4),
+        x: clamp(toots.x + (toots.x < T.WORLD_WIDTH / 2 ? 26 : -26), 4, roomWidth(s.level) - 4),
         y: Math.max(2, toots.y - 26),
       };
   s.blame = { text, at, leftMs: T.DECOY_HOLD_MS };

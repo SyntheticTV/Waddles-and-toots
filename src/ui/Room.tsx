@@ -28,7 +28,7 @@ import {
 } from '@shopify/react-native-skia';
 
 import { readLocal, readNose, type RunState } from '../game/engine';
-import { exitFacesUp } from '../game/types';
+import { exitSide, roomWidth } from '../game/types';
 import { hazeOpacity, huntHeat, stageFor } from '../game/stink';
 import {
   CAMERA_LOOK_AHEAD,
@@ -130,7 +130,16 @@ export function Room({ run, width, height }: Props) {
   if (Math.abs(wanted - zoomRef.current) < 0.004) zoomRef.current = wanted;
   const zoom = zoomRef.current;
 
+  /*
+   * The zoom is calibrated against the *standard* room width, not this room's.
+   *
+   * Dividing by the actual width would shrink everything in a wide room — a
+   * terminal would be the same picture drawn smaller, rather than a bigger place
+   * to walk across. Characters stay the same size on screen whatever the room
+   * measures, and a wider room simply means the camera has further to pan.
+   */
   const scale = (width / WORLD_WIDTH) * zoom;
+  const roomW = roomWidth(run.level);
   const viewHeightWorld = height / scale;
   const t = run.elapsed;
 
@@ -140,7 +149,8 @@ export function Room({ run, width, height }: Props) {
    * on the room: climbing rooms hold him low and look up, and a room whose way
    * out is at the bottom holds him high and looks down.
    */
-  const lookAhead = exitFacesUp(run.level) ? CAMERA_LOOK_AHEAD : 1 - CAMERA_LOOK_AHEAD;
+  const side = exitSide(run.level);
+  const lookAhead = side === 'bottom' ? 1 - CAMERA_LOOK_AHEAD : CAMERA_LOOK_AHEAD;
   const camera = clamp(
     run.waddles.y - viewHeightWorld * lookAhead,
     0,
@@ -150,10 +160,17 @@ export function Room({ run, width, height }: Props) {
   // Zoomed in, the room is wider than the screen, so the view follows him across
   // it too. At the wide end this clamps to zero and the whole floor is on screen.
   const viewWidthWorld = width / scale;
+  /*
+   * Sideways, the camera leads the same way it does vertically — but only when
+   * the way out is actually in a side wall. In every other room it stays
+   * centred, because leading toward nothing just makes the picture lopsided.
+   */
+  const lookAcross =
+    side === 'left' ? 1 - CAMERA_LOOK_AHEAD : side === 'right' ? CAMERA_LOOK_AHEAD : 0.5;
   const cameraX = clamp(
-    run.waddles.x - viewWidthWorld / 2,
+    run.waddles.x - viewWidthWorld * lookAcross,
     0,
-    Math.max(0, WORLD_WIDTH - viewWidthWorld)
+    Math.max(0, roomW - viewWidthWorld)
   );
 
   // World y grows toward the exit, screen y grows downward, so the room is
@@ -243,7 +260,7 @@ export function Room({ run, width, height }: Props) {
           t={t}
           openness={openness.current}
           dimmed={haze > 0.4}
-          facesUp={exitFacesUp(run.level)}
+          side={side}
         />
       </Group>
 

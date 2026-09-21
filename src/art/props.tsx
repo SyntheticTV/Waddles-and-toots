@@ -2890,6 +2890,218 @@ const Lift = ({ t }: ArtProps) => (
   </Group>
 );
 
+// --------------------------------------------------------------- the airport
+//
+// Everything in a terminal is grey, which is a problem when the room is grey.
+// Each of these therefore gets one saturated colour doing the identifying —
+// the red of a security tray, the orange of a hot plate — and the grey is only
+// ever the frame around it.
+
+const TERMINAL = '#8E96A0';
+
+/** A bank of seats, running the width of the room. */
+const Seating = () => (
+  <Group>
+    <Ink d="M 1 3 L 99 3 L 97 9 L 3 9 Z" fill={lighten(TERMINAL, 0.26)} outline="#4E565E" weight={OUTLINE_FINE} />
+    {[0, 1, 2, 3, 4, 5].map((i) => (
+      <Group key={i}>
+        {/* the back, then the seat, then the gap that makes them separate chairs */}
+        <Rect x={4 + i * 16} y={5} width={13} height={9} color={TERMINAL} />
+        <Rect x={4 + i * 16} y={14} width={13} height={8} color={darken(TERMINAL, 0.26)} />
+        <Rect x={17 + i * 16} y={5} width={2} height={17} color={darken(TERMINAL, 0.46)} opacity={0.7} />
+      </Group>
+    ))}
+    <Stroke d="M 2 22 L 98 22" color="#4E565E" weight={2.5} />
+    <Sheen cx={20} cy={8} r={22} strength={0.28} />
+  </Group>
+);
+
+/** A bag on the belt, and rather more of a bag check than anyone wanted. */
+const BagCheck = ({ t }: ArtProps) => (
+  <Group>
+    <Panel x={2} y={28} w={96} h={22} colors={[lighten(TERMINAL, 0.2), darken(TERMINAL, 0.3)]} r={2} />
+    <Rect x={8} y={33} width={84} height={12} color={art.charcoal} opacity={0.85} />
+    {/* the bag, open, and its contents no longer anybody's secret */}
+    <Form
+      d="M 22 20 q 26 -10 52 0 l 4 18 q -30 8 -60 0 Z"
+      colors={[lighten('#6E5A8C', 0.26), '#6E5A8C', darken('#6E5A8C', 0.34)]}
+      positions={[0, 0.45, 1]}
+      from={[24, 12]}
+      to={[76, 40]}
+      outline="#3E3252"
+      weight={OUTLINE_FINE}
+    />
+    <Stroke d="M 24 24 q 26 -8 52 0" color={lighten('#6E5A8C', 0.4)} weight={2.5} opacity={0.8} />
+    <Ink d="M 54 16 q 14 -12 22 -2 q -6 10 -18 8 Z" fill={art.cream} outline="#A89C82" weight={2} />
+    <Whiff x={36} y={10} t={t} />
+    <Whiff x={66} y={6} t={t} phase={1.4} />
+  </Group>
+);
+
+/** The window onto the apron, and what is idling out there. */
+const JetExhaust = ({ t }: ArtProps) => (
+  <Group>
+    <Panel x={2} y={10} w={96} h={48} colors={[art.metalDark, darken(art.metalDark, 0.3)]} r={2} />
+    <Panel x={8} y={16} w={84} h={30} colors={[palette.breeze, darken(palette.breeze, 0.28)]} r={1} />
+    {/* a tail fin, and the heat coming off it */}
+    <Ink d="M 52 42 L 68 18 L 74 18 L 74 42 Z" fill={palette.alarm} outline="#8E3A2E" weight={2} />
+    <Stroke d="M 14 40 L 50 40" color={palette.white} weight={3} opacity={0.7} />
+    {[0, 1, 2].map((i) => (
+      <Stroke
+        key={i}
+        d={`M ${16 + i * 8} 36 q 6 ${-5 - i} 12 0`}
+        color={art.metal}
+        weight={2.6}
+        opacity={0.35 + 0.25 * Math.sin(t * 3 + i)}
+      />
+    ))}
+    <Whiff x={30} y={6} t={t} />
+    <Whiff x={64} y={2} t={t} phase={1.7} />
+  </Group>
+);
+
+/** Duty free, and one tester bottle too many. */
+const DutyFree = ({ t }: ArtProps) => (
+  <Group>
+    <Panel x={4} y={30} w={92} h={30} colors={[lighten(art.wood, 0.24), darken(art.wood, 0.22)]} r={2} />
+    {[
+      [14, '#D96A9E'],
+      [38, palette.nugget],
+      [62, palette.breeze],
+      [82, '#9E7ED9'],
+    ].map(([x, c], i) => (
+      <Group key={i}>
+        <Ink
+          d={`M ${x} 18 L ${Number(x) + 12} 18 L ${Number(x) + 12} 34 L ${x} 34 Z`}
+          fill={c as string}
+          outline="#6E5A44"
+          weight={2}
+        />
+        <Rect x={Number(x) + 4} y={12} width={4} height={7} color={art.metalDark} />
+      </Group>
+    ))}
+    <Stroke d="M 6 60 L 94 60" color={darken(art.wood, 0.4)} weight={2.5} />
+    {/* somebody has sprayed all four at once */}
+    <Whiff x={26} y={8} t={t} />
+    <Whiff x={50} y={2} t={t} phase={1.2} />
+    <Whiff x={74} y={6} t={t} phase={2.3} />
+    <Sheen cx={20} cy={26} r={22} strength={0.3} />
+  </Group>
+);
+
+/** The cleaning cart, whose smell is technically the good one. */
+const CleaningCart = ({ t }: ArtProps) => (
+  <Group>
+    <Ink d="M 10 30 L 88 30 L 82 62 L 16 62 Z" fill={palette.nugget} outline="#9A6E18" weight={OUTLINE_FINE} />
+    <Stroke d="M 6 26 L 92 26" color={art.metalDark} weight={4} />
+    {/* bottles of the stuff that stings */}
+    {[22, 40, 58].map((x, i) => (
+      <Ink
+        key={i}
+        d={`M ${x} 14 L ${x + 12} 14 L ${x + 12} 30 L ${x} 30 Z`}
+        fill={i === 1 ? palette.breeze : palette.white}
+        outline="#6E8894"
+        weight={2}
+      />
+    ))}
+    <Stroke d="M 74 30 L 82 6" color={art.woodDark} weight={4} />
+    <Ink d="M 68 2 q 18 -2 20 8 q -12 4 -20 -8 Z" fill={art.shell} outline="#8A7A5C" weight={2} />
+    <Circle cx={26} cy={68} r={5} color={art.charcoal} />
+    <Circle cx={72} cy={68} r={5} color={art.charcoal} />
+    <Whiff x={46} y={6} t={t} />
+  </Group>
+);
+
+/** The food court, and one hot plate that has seen a whole week. */
+const FoodCourt = ({ t }: ArtProps) => (
+  <Group>
+    <Panel x={2} y={22} w={96} h={26} colors={[lighten(art.metal, 0.26), darken(art.metal, 0.3)]} r={2} />
+    {/* the heat lamps, and what is under them */}
+    <Ink d="M 6 8 L 94 8 L 94 16 L 6 16 Z" fill={art.metalDark} outline="#3E4347" weight={2} />
+    {[0, 1, 2, 3].map((i) => (
+      <Rect key={i} x={12 + i * 22} y={10} width={14} height={4} color={palette.nugget} opacity={0.95} />
+    ))}
+    {[
+      [14, '#B97A32'],
+      [40, '#8FA84E'],
+      [66, '#C9542F'],
+    ].map(([x, c], i) => (
+      <Ink
+        key={i}
+        d={`M ${x} 28 q 10 -7 20 0 q -10 8 -20 0 Z`}
+        fill={c as string}
+        outline="#6E4A22"
+        weight={2}
+      />
+    ))}
+    <Stroke d="M 3 48 L 97 48" color={art.metalDark} weight={2.5} />
+    <Whiff x={26} y={4} t={t} />
+    <Whiff x={62} y={0} t={t} phase={1.6} />
+  </Group>
+);
+
+/** Lost luggage, found. */
+const LostLuggage = ({ t }: ArtProps) => (
+  <Group>
+    {[
+      [6, 34, '#3E6E8C'],
+      [40, 26, '#8C4A3E'],
+      [70, 36, '#4E6E4A'],
+    ].map(([x, y, c], i) => (
+      <Group key={i}>
+        <Form
+          d={`M ${x} ${y} q 12 -5 24 0 l 0 26 q -12 5 -24 0 Z`}
+          colors={[lighten(c as string, 0.28), c as string, darken(c as string, 0.34)]}
+          positions={[0, 0.45, 1]}
+          from={[Number(x), Number(y)]}
+          to={[Number(x) + 24, Number(y) + 26]}
+          outline="#2E2820"
+          weight={OUTLINE_FINE}
+        />
+        <Stroke
+          d={`M ${Number(x) + 6} ${Number(y) - 8} q 6 -6 12 0`}
+          color={art.metalDark}
+          weight={3}
+        />
+        {/* the tag that has been round the world twice */}
+        <Ink
+          d={`M ${Number(x) + 16} ${Number(y) + 4} L ${Number(x) + 26} ${Number(y) + 6} L ${
+            Number(x) + 26
+          } ${Number(y) + 14} L ${Number(x) + 16} ${Number(y) + 12} Z`}
+          fill={art.cream}
+          outline="#A89C82"
+          weight={1.6}
+        />
+      </Group>
+    ))}
+    <Whiff x={28} y={18} t={t} />
+    <Whiff x={62} y={12} t={t} phase={1.5} />
+  </Group>
+);
+
+/** The shoe trays. Four hundred people today. */
+const ShoeTrays = ({ t }: ArtProps) => (
+  <Group>
+    {[0, 1, 2].map((i) => (
+      <Ink
+        key={i}
+        d={`M ${8 + i * 4} ${62 - i * 14} L ${92 - i * 4} ${62 - i * 14} L ${86 - i * 4} ${
+          78 - i * 14
+        } L ${14 + i * 4} ${78 - i * 14} Z`}
+        fill={i % 2 ? darken(palette.alarm, 0.16) : palette.alarm}
+        outline="#7E2A20"
+        weight={OUTLINE_FINE}
+      />
+    ))}
+    {/* and a pair somebody left behind */}
+    <Ink d="M 26 30 q 6 -10 18 -6 q 2 8 -6 10 Z" fill={art.charcoal} outline="#2E2C28" weight={2} />
+    <Ink d="M 52 28 q 8 -9 18 -4 q 0 8 -8 9 Z" fill={darken(art.charcoal, 0.2)} outline="#2E2C28" weight={2} />
+    <Whiff x={34} y={18} t={t} />
+    <Whiff x={64} y={14} t={t} phase={1.3} />
+    <Whiff x={48} y={8} t={t} phase={2.4} />
+  </Group>
+);
+
 const BY_ID: Record<string, Entry> = {
   'potato-salad': { w: 100, h: 50, Art: PotatoSalad },
   grill: { w: 100, h: 80, Art: Grill },
@@ -3054,6 +3266,32 @@ const BY_ID: Record<string, Entry> = {
   'staff-room': { w: 100, h: 78, Art: FalseDoor },
   stockroom: { w: 100, h: 78, Art: FalseDoor },
   'warehouse-door': { w: 100, h: 114, Art: FalseDoor },
+  // --- the airport ---
+  'seats-8': { w: 100, h: 40, Art: Seating },
+  'seats-9': { w: 100, h: 40, Art: Seating },
+  'seats-10': { w: 100, h: 40, Art: Seating },
+  'seats-11': { w: 100, h: 40, Art: Seating },
+  'seats-12': { w: 100, h: 40, Art: Seating },
+  'seats-13': { w: 100, h: 40, Art: Seating },
+  'seats-14': { w: 100, h: 40, Art: Seating },
+  'seats-15': { w: 100, h: 40, Art: Seating },
+  'seats-16': { w: 100, h: 40, Art: Seating },
+  'seats-17': { w: 100, h: 40, Art: Seating },
+  'seats-18': { w: 100, h: 40, Art: Seating },
+  'seats-1': { w: 100, h: 40, Art: Seating },
+  'seats-2': { w: 100, h: 40, Art: Seating },
+  'seats-3': { w: 100, h: 40, Art: Seating },
+  'seats-4': { w: 100, h: 40, Art: Seating },
+  'seats-5': { w: 100, h: 40, Art: Seating },
+  'seats-6': { w: 100, h: 40, Art: Seating },
+  'seats-7': { w: 100, h: 40, Art: Seating },
+  'bag-check': { w: 100, h: 62, Art: BagCheck },
+  'jet-exhaust': { w: 100, h: 73, Art: JetExhaust },
+  'duty-free': { w: 100, h: 67, Art: DutyFree },
+  'cleaning-cart': { w: 100, h: 70, Art: CleaningCart },
+  'food-court': { w: 100, h: 57, Art: FoodCourt },
+  'lost-luggage': { w: 100, h: 58, Art: LostLuggage },
+  'shoe-trays': { w: 100, h: 55, Art: ShoeTrays },
 };
 
 /** Anything a level hasn't drawn yet still reads as what it does. */
